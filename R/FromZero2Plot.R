@@ -345,7 +345,6 @@ fromparse2onco <- function(path_to_parse, more_than_one, tumor_only, pattern_exc
                             row_names_gp = gpar(fontsize = 10, fontface = "italic"),
                             show_pct = TRUE,
                             column_names_side = c("bottom"),
-                            column_order = newOrder,
                             show_column_names = TRUE,
                             show_heatmap_legend = TRUE)
   png("oncoplot.png", width = 2000, height = 1200, res = 150)
