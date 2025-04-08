@@ -1,37 +1,29 @@
-#' Parse and Combine Variant Data
+#' Read parse_variants Output and Convert To MAF
 #'
-#' This function reads and processes variant data from one or more Excel files, filtering and formatting the data as specified.
+#' This function reads variant data from one or more Excel files produced by parse_variants program and processes it in order to match MAF format specifications.
 #'
-#' @param path_to_parse A character string specifying the path to the directory or file to be parsed.
-#' @param more_than_one A logical value indicating if there are multiple files to parse. Default is FALSE.
+#' @param path_to_parse A vector of paths to the excel files to be read.
 #' @param tumor_only A logical value indicating if only tumor data should be processed. Default is FALSE.
-#' @param pattern_excel A character string specifying the pattern to match file names if there are multiple files. Default is FALSE.
+#' @param oncokb A logical value indicating whether OncoKB annotation was performed. Default is FALSE.
+#' @param cgi A logical value indicating whether CGI annotation was performed. Default is FALSE.
 #'
-#' @return A data frame containing the parsed and processed variant data.
+#' @return A data frame containing the processed variant data.
 #' @import readxl
 #' @import dplyr
 #' @import stringr
 #' @import purrr
 #' @examples
 #' # Example usage:
-#' # variants_df <- fromparse2table("/path/to/files", more_than_one=TRUE, tumor_only=TRUE, pattern_excel="*.xlsx")
+#' # variants_df <- fromparse2table(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
-fromparse2table <- function(path_to_parse, more_than_one, tumor_only, pattern_excel=FALSE, oncokb=FALSE, cgi=FALSE) {
-  # Read the variants data
-  variants_df <- NULL
-  if (more_than_one) {
-    print("Processing multiple files")
-    results_parse_more_than_one <- list.files(path = path_to_parse, pattern = pattern_excel)
+fromparse2table <- function(path_to_parse, tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
+  # Read the variants data from one or multiple excel files
+  variants_df <- do.call(rbind, lapply(path_to_parse, 
+                                             function(i) {
+                                               read_excel(file.path(i))
+                                             }))
 
-    # Use lapply to read and bind all files into one dataframe
-    variants_df <- do.call(bind_rows, lapply(results_parse_more_than_one, function(i) {
-      read_excel(file.path(path_to_parse, i))
-    }))
-  } else {
-    print("Processing a single file")
-    variants_df <- read_excel(path_to_parse)
-  }
 
   # Process data based on tumor_only flag
   if (tumor_only) {
