@@ -2,34 +2,27 @@
 % Please edit documentation in R/fromparse2table.R
 \name{fromparse2table}
 \alias{fromparse2table}
-\title{Parse and Combine Variant Data}
+\title{Read parse_variants Output and Convert To MAF}
 \usage{
-fromparse2table(
-  path_to_parse,
-  more_than_one,
-  tumor_only,
-  pattern_excel = FALSE,
-  oncokb = FALSE,
-  cgi = FALSE
-)
+fromparse2table(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE)
 }
 \arguments{
-\item{path_to_parse}{A character string specifying the path to the directory or file to be parsed.}
-
-\item{more_than_one}{A logical value indicating if there are multiple files to parse. Default is FALSE.}
+\item{path_to_parse}{A vector of paths to the excel files to be read.}
 
 \item{tumor_only}{A logical value indicating if only tumor data should be processed. Default is FALSE.}
 
-\item{pattern_excel}{A character string specifying the pattern to match file names if there are multiple files. Default is FALSE.}
+\item{oncokb}{A logical value indicating whether OncoKB annotation was performed. Default is FALSE.}
+
+\item{cgi}{A logical value indicating whether CGI annotation was performed. Default is FALSE.}
 }
 \value{
-A data frame containing the parsed and processed variant data.
+A data frame containing the processed variant data.
 }
 \description{
-This function reads and processes variant data from one or more Excel files, filtering and formatting the data as specified.
+This function reads variant data from one or more Excel files produced by parse_variants program and processes it in order to match MAF format specifications.
 }
 \examples{
 # Example usage:
-# variants_df <- fromparse2table("/path/to/files", more_than_one=TRUE, tumor_only=TRUE, pattern_excel="*.xlsx")
+# variants_df <- fromparse2table(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 
 }

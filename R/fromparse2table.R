@@ -17,7 +17,7 @@
 #' # variants_df <- fromparse2table(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
-fromparse2table <- function(path_to_parse, tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
+fromparse2table <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
   # Read the variants data from one or multiple excel files
   variants_df <- do.call(rbind, lapply(path_to_parse, 
                                              function(i) {
@@ -38,7 +38,6 @@ fromparse2table <- function(path_to_parse, tumor_only = FALSE, oncokb=FALSE, cgi
       "Reference_Allele" = "REF",
       "Tumor_Seq_Allele2" = "ALT",
       "FILTER" = "FILTER",
-      "Variant_Type" = "Feature_Type",
       "Hugo_Symbol" = "Gene_Name",
       "Variant_Classification" = "Annotation",
       "IMPACT" = "Annotation_Impact",
@@ -65,7 +64,6 @@ fromparse2table <- function(path_to_parse, tumor_only = FALSE, oncokb=FALSE, cgi
       "Reference_Allele" = "REF",
       "Tumor_Seq_Allele2" = "ALT",
       "FILTER" = "FILTER",
-      "Variant_Type" = "Feature_Type",
       "Hugo_Symbol" = "Gene_Name",
       "Variant_Classification" = "Annotation",
       "IMPACT" = "Annotation_Impact",
@@ -103,12 +101,13 @@ fromparse2table <- function(path_to_parse, tumor_only = FALSE, oncokb=FALSE, cgi
   # Calculate End_Position and modify Variant_Type column
   variants_df <- variants_df %>%
     mutate(dif_len = str_length(Tumor_Seq_Allele2) - str_length(Reference_Allele),
-           End_Position = Start_Position + abs(dif_len) - 1,
            Variant_Type = case_when(
              dif_len == 0 & str_length(Tumor_Seq_Allele2) == 1 ~ 'SNP',
+             dif_len == 0 & str_length(Tumor_Seq_Allele2) == 2 ~ 'DNP',
+             dif_len == 0 & str_length(Tumor_Seq_Allele2) == 3 ~ 'TNP',
+             dif_len == 0 & str_length(Tumor_Seq_Allele2) > 3 ~ 'ONP',
              dif_len > 0 ~ 'INS',
-             dif_len < 0 ~ 'DEL',
-             TRUE ~ Variant_Type
+             dif_len < 0 ~ 'DEL'
            ))
 
   return(variants_df)
