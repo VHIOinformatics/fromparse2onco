@@ -8,6 +8,7 @@ Description: This package creates oncoplots using parse variants information
     Use four spaces when indenting paragraphs within the Description.
 License: `use_mit_license()`
 Encoding: UTF-8
+LazyData: true
 RoxygenNote: 7.3.2
 import:
     ComplexHeatmap
