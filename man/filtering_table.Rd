@@ -10,11 +10,12 @@ filtering_table(
   filter_column = c("PASS"),
   VAF_tumor = 0,
   VAF_control = 0,
-  total_reads = 0,
-  tumor_reads = 0,
+  total_tumor_reads = 0,
+  alt_tumor_reads = 0,
   cgi_path = FALSE,
   oncokb_path = FALSE,
-  cgi_list = c("oncogenic (predicted)", "oncogenic (predicted and annotated)"),
+  cgi_list = c("oncogenic (predicted)", "oncogenic (predicted and annotated)",
+    "oncogenic (annotated)"),
   oncokb_list = c("Likely Oncogenic", "Oncogenic"),
   annott = c("HIGH", "MODERATE", "MODIFIER")
 )
@@ -26,13 +27,13 @@ filtering_table(
 
 \item{filter_column}{A character vector specifying the values to filter the `FILTER` column by. Default is "PASS".}
 
-\item{VAF_tumor}{A numeric threshold for the variant allele frequency (VAF) in the tumor sample. Default is 0.}
+\item{VAF_tumor}{The minimum variant allele frequency in the tumor sample (from 0 to 1). Default is 0.}
 
-\item{VAF_control}{A numeric threshold for the variant allele frequency (VAF) in the control sample. Default is 0.}
+\item{VAF_control}{The maximum variant allele frequency in the control sample (from 0 to 1). Default is 0.}
 
-\item{total_reads}{A numeric threshold for the total reads. Default is 0.}
+\item{total_tumor_reads}{The minimum number of reads in the tumor sample. Default is 0.}
 
-\item{tumor_reads}{A numeric threshold for the alternative reads in the tumor sample. Default is 0.}
+\item{alt_tumor_reads}{The minimum number of alternative reads in the tumor sample. Default is 0.}
 
 \item{cgi_path}{A boolean that defines if CGI column exists}
 
@@ -46,5 +47,5 @@ This function filters a data frame of genetic variants based on specified criter
 }
 \examples{
 # Example usage:
-# filtered_df <- filtering_table(variants_df, tumor_only=TRUE, VAF_tumor=0.05, tumor_reads=10)
+# filtered_df <- filtering_table(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
 }
