@@ -9,8 +9,11 @@
 #' @param VAF_control The maximum variant allele frequency in the control sample (from 0 to 1). Default is 0.
 #' @param total_tumor_reads The minimum number of reads in the tumor sample. Default is 0.
 #' @param alt_tumor_reads The minimum number of alternative reads in the tumor sample. Default is 0.
-#' @param cgi_path A boolean that defines if CGI column exists
-#' @param oncokb_path A boolean that defines if oncokb column exists
+#' @param cgi A logical value indicating if the CGI Summary column should be used to filter keeping labels included in cgi_list.
+#' @param oncokb A logical value indicating if the OncoKB column should be used to filter keeping labels included in oncokb_list.
+#' @param cgi_list Vector of CGI Summary labels to keep.
+#' @param oncokb_list Vector of OncoKB labels to keep.
+#' @param annott Vector of Annotation Impact labels from SnpEff to keep.
 #'
 #' @return A filtered data frame containing variants that meet the specified criteria.
 #' @examples
@@ -18,7 +21,7 @@
 #' # filtered_df <- filtering_table(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
 #' @export
 
-filtering_table <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi_path=FALSE, oncokb_path=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER")) {
+filtering_table <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER")) {
   # Initialize the filtered table with base conditions
   filter_conditions <- to_filter %>%
     # Filter by the specified columns and minimum conditions for VAF and tumor alternative reads
@@ -33,14 +36,14 @@ filtering_table <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS")
       # Filter by the total number of reads
       filter(TotalReads >= total_tumor_reads)
 
-    # If cgi_path is true, filter by the CGI list
-    if (cgi_path) {
+    # If cgi is true, filter by the CGI list
+    if (cgi) {
       filter_conditions <- filter_conditions %>%
         filter(`CGI-SUMMARY` %in% cgi_list)
     }
 
-    # If oncokb_path is true, filter by the OncoKB list
-    if (oncokb_path) {
+    # If onco is true, filter by the OncoKB list
+    if (oncokb) {
       filter_conditions <- filter_conditions %>%
         filter(OncoKB %in% oncokb_list)
     }
@@ -51,14 +54,14 @@ filtering_table <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS")
       filter(VAF_normal <= VAF_control,
              TotalReads_Tumor >= total_tumor_reads)
 
-    # If cgi_path is true, filter by the CGI list
-    if (cgi_path) {
+    # If cgi is true, filter by the CGI list
+    if (cgi) {
       filter_conditions <- filter_conditions %>%
         filter(`CGI-SUMMARY` %in% cgi_list)
     }
 
-    # If oncokb_path is true, filter by the OncoKB list
-    if (oncokb_path) {
+    # If oncokb is true, filter by the OncoKB list
+    if (oncokb) {
       filter_conditions <- filter_conditions %>%
         filter(OncoKB %in% oncokb_list)
     }

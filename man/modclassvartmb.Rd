@@ -2,7 +2,7 @@
 % Please edit documentation in R/modclassvar.R
 \name{modclassvartmb}
 \alias{modclassvartmb}
-\title{Create oncomatrix from MAF file}
+\title{Create oncomatrix from MAF Data Frame}
 \usage{
 modclassvartmb(
   maf_df,
@@ -29,10 +29,10 @@ modclassvartmb(
 \item{nonSyn}{Vector of Variant Classifications to keep. Equivalent to vc_nonSyn in maftools::read.maf function. Default is c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation").}
 }
 \value{
-Summary plots. It also saves the oncomatrix (onco_matrix.txt) and the TMB table (TMB_table.txt) in the working directory.
+It prints summary plots and saves the oncomatrix (onco_matrix.txt) and the TMB table (TMB_table.txt) in the working directory.
 }
 \description{
-This function reads a MAF file, filters it and creates an oncomatrix. It also prints summary plots and creates a TMB table. It does so by executing functions in maftools package.
+This function takes a MAF dataframe, filters it and creates an oncomatrix. It also prints summary plots and creates a TMB table. It does so by executing functions in maftools package.
 }
 \examples{
 # Example usage:

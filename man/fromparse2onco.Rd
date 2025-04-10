@@ -6,16 +6,25 @@
 \usage{
 fromparse2onco(
   path_to_parse,
-  more_than_one,
-  tumor_only,
-  pattern_excel = FALSE,
+  tumor_only = FALSE,
   filter_column = c("PASS"),
   VAF_tumor = 0,
   VAF_control = 0,
-  total_reads = 0,
-  tumor_reads = 0,
+  total_tumor_reads = 0,
+  alt_tumor_reads = 0,
+  cgi = FALSE,
+  oncokb = FALSE,
+  cgi_list = c("oncogenic (predicted)", "oncogenic (predicted and annotated)",
+    "oncogenic (annotated)"),
+  oncokb_list = c("Likely Oncogenic", "Oncogenic"),
+  annott = c("HIGH", "MODERATE", "MODIFIER"),
   remove = FALSE,
-  minimum_samples_mutated = 1,
+  flags = FALSE,
+  minimalMutations = 2,
+  topgenes = 20000,
+  nonSyn = c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site",
+    "Translation_Start_Site", "Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del",
+    "In_Frame_Ins", "Missense_Mutation"),
   Missense_color = "#2a9134",
   Nonsense_color = "#ffca3a",
   Nonstop_color = "#000000",
@@ -25,44 +34,43 @@ fromparse2onco(
   In_Frame_Del_color = "plum1",
   Tranlsation_Start_Site_color = "#ff0a54",
   Splice_site_color = "darkorange",
-  Multihit_color = "#dab49d",
-  flags = FALSE,
-  nonSyn = c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site",
-    "Translation_Start_Site", "Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del",
-    "In_Frame_Ins", "Missense_Mutation"),
-  cgi_path = FALSE,
-  oncokb_path = FALSE,
-  cgi_list = c("oncogenic (predicted)", "oncogenic (predicted and annotated)"),
-  oncokb_list = c("Likely Oncogenic", "Oncogenic"),
-  annott = c("HIGH", "MODERATE", "MODIFIER"),
-  oncokb = FALSE,
-  cgi = FALSE,
-  minimalMutations = 10,
-  topgenes = 50
+  Multihit_color = "#dab49d"
 )
 }
 \arguments{
-\item{path_to_parse}{Path to the parsed data file(s).}
+\item{path_to_parse}{A vector of paths to the excel files to be read.}
 
-\item{more_than_one}{Logical indicating whether there are multiple files to process.}
+\item{tumor_only}{A logical value indicating if only tumor data should be processed. Default is FALSE.}
 
-\item{tumor_only}{Logical indicating whether only tumor data should be considered.}
+\item{filter_column}{A character vector specifying the values to filter the `FILTER` column by. Default is "PASS".}
 
-\item{pattern_excel}{Pattern for matching Excel files.}
+\item{VAF_tumor}{The minimum variant allele frequency in the tumor sample (from 0 to 1). Default is 0.}
 
-\item{filter_column}{Filter column for variant filtering.}
+\item{VAF_control}{The maximum variant allele frequency in the control sample (from 0 to 1). Default is 0.}
 
-\item{VAF_tumor}{Minimum VAF for tumor samples.}
+\item{total_tumor_reads}{The minimum number of reads in the tumor sample. Default is 0.}
 
-\item{VAF_control}{Minimum VAF for control samples.}
+\item{alt_tumor_reads}{The minimum number of alternative reads in the tumor sample. Default is 0.}
 
-\item{total_reads}{Minimum total reads.}
+\item{cgi}{A logical value indicating if the CGI Summary column should be used to filter keeping labels included in cgi_list.}
 
-\item{tumor_reads}{Minimum tumor reads.}
+\item{oncokb}{A logical value indicating if the OncoKB column should be used to filter keeping labels included in oncokb_list.}
 
-\item{remove}{Logical indicating whether duplicated variants should be removed.}
+\item{cgi_list}{Vector of CGI Summary labels to keep.}
 
-\item{minimum_samples_mutated}{Minimum number of samples mutated for inclusion in the oncoplot.}
+\item{oncokb_list}{Vector of OncoKB labels to keep.}
+
+\item{annott}{Vector of Annotation Impact labels from SnpEff to keep.}
+
+\item{remove}{A logical value indicating whether to remove duplicated variants. Equivalent to removeDuplicatedVariants in maftools::read.maf function. Default is FALSE.}
+
+\item{flags}{A logical value indicating whether to remove FLAG genes. Equivalent to rmFlags in maftools::read.maf function. Default is FALSE.}
+
+\item{minimalMutations}{Minimum number of samples mutated in a gene to be drawn. Equivalent to minMut in maftools::oncoplot function. Deafult is 2.}
+
+\item{topgenes}{Number of top genes to be drawn. Equivalent to top in maftools::oncoplot function. Default = 20000.}
+
+\item{nonSyn}{Vector of Variant Classifications to keep. Equivalent to vc_nonSyn in maftools::read.maf function. Default is c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation").}
 
 \item{Missense_color}{Color for missense variants. Default is "#2a9134".}
 
@@ -83,17 +91,14 @@ fromparse2onco(
 \item{Splice_site_color}{Color for splicing sites. Default is "darkorange".}
 
 \item{Multihit_color}{Color for multi-hit genes. Default is "#dab49d".}
-
-\item{minimalMutations}{Minimum number of mutations per gene to not be discarded. Default is 10.}
-
-\item{topgenes}{Number of genes to show in the oncoplot}
 }
 \value{
-An object to represent an oncoplot or an oncoplot
+An oncoplot object which is also saved as a png file.
 }
 \description{
 Convert Parsed Data to Oncoplot
 }
 \examples{
-oncobuddy <-fromparse2onco("/path/to/parse/",TRUE,TRUE,pattern_excel="pattern")
+oncobuddy <-fromparse2onco(path_to_parse = c("/path/to/file1","/path/to/file2"), VAF_tumor=0.05, minimalMutations=3, Missense_color="#FF5733")
+
 }

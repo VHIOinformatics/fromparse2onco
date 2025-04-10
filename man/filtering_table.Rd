@@ -12,8 +12,8 @@ filtering_table(
   VAF_control = 0,
   total_tumor_reads = 0,
   alt_tumor_reads = 0,
-  cgi_path = FALSE,
-  oncokb_path = FALSE,
+  cgi = FALSE,
+  oncokb = FALSE,
   cgi_list = c("oncogenic (predicted)", "oncogenic (predicted and annotated)",
     "oncogenic (annotated)"),
   oncokb_list = c("Likely Oncogenic", "Oncogenic"),
@@ -35,9 +35,15 @@ filtering_table(
 
 \item{alt_tumor_reads}{The minimum number of alternative reads in the tumor sample. Default is 0.}
 
-\item{cgi_path}{A boolean that defines if CGI column exists}
+\item{cgi}{A logical value indicating if the CGI Summary column should be used to filter keeping labels included in cgi_list.}
 
-\item{oncokb_path}{A boolean that defines if oncokb column exists}
+\item{oncokb}{A logical value indicating if the OncoKB column should be used to filter keeping labels included in oncokb_list.}
+
+\item{cgi_list}{Vector of CGI Summary labels to keep.}
+
+\item{oncokb_list}{Vector of OncoKB labels to keep.}
+
+\item{annott}{Vector of Annotation Impact labels from SnpEff to keep.}
 }
 \value{
 A filtered data frame containing variants that meet the specified criteria.
