@@ -101,6 +101,9 @@ fromparse2table <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=
   # Calculate End_Position and modify Variant_Type column
   variants_df <- variants_df %>%
     mutate(dif_len = str_length(Tumor_Seq_Allele2) - str_length(Reference_Allele),
+           #According to MAF format specifications (https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/) the end position is the highest numeric genomic position of the reported variant
+           #The End_Position field is not actually used to make the oncoplot but it is required by the read.maf function when validating the required fields from MAF
+           End_Position = Start_Position + str_length(Tumor_Seq_Allele2) - 1,
            Variant_Type = case_when(
              dif_len == 0 & str_length(Tumor_Seq_Allele2) == 1 ~ 'SNP',
              dif_len == 0 & str_length(Tumor_Seq_Allele2) == 2 ~ 'DNP',

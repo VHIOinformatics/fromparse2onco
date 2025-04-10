@@ -2,12 +2,11 @@
 % Please edit documentation in R/modclassvar.R
 \name{modclassvartmb}
 \alias{modclassvartmb}
-\title{Modify and Classify Variants, Calculate TMB}
+\title{Create oncomatrix from MAF file}
 \usage{
 modclassvartmb(
-  to_class,
+  maf_df,
   remove = FALSE,
-  minimum_samples_mutated = 1,
   flags = FALSE,
   minimalMutations = 2,
   topgenes = 20000,
@@ -17,20 +16,26 @@ modclassvartmb(
 )
 }
 \arguments{
-\item{to_class}{A data frame containing the variants to be classified.}
+\item{maf_df}{A data frame in MAF format.}
 
-\item{remove}{A logical value indicating whether to remove duplicated variants. Default is FALSE.}
+\item{remove}{A logical value indicating whether to remove duplicated variants. Equivalent to removeDuplicatedVariants in maftools::read.maf function. Default is FALSE.}
 
-\item{minimum_samples_mutated}{An integer specifying the minimum number of samples mutated to filter the matrix. Default is 1.}
+\item{flags}{A logical value indicating whether to remove FLAG genes. Equivalent to rmFlags in maftools::read.maf function. Default is FALSE.}
+
+\item{minimalMutations}{Minimum number of samples mutated in a gene to be drawn. Equivalent to minMut in maftools::oncoplot function. Deafult is 2.}
+
+\item{topgenes}{Number of top genes to be drawn. Equivalent to top in maftools::oncoplot function. Default = 20000.}
+
+\item{nonSyn}{Vector of Variant Classifications to keep. Equivalent to vc_nonSyn in maftools::read.maf function. Default is c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation").}
 }
 \value{
-A filtered matrix of the variant classifications.
+Summary plots. It also saves the oncomatrix (onco_matrix.txt) and the TMB table (TMB_table.txt) in the working directory.
 }
 \description{
-This function modifies the classification of variants and generates summary plots.
+This function reads a MAF file, filters it and creates an oncomatrix. It also prints summary plots and creates a TMB table. It does so by executing functions in maftools package.
 }
 \examples{
 # Example usage:
-# filtered_matrix <- modclassvar(variant_data, remove=TRUE, minimum_samples_mutated=5)
+# modclassvartmb(filtered_df, remove=TRUE, minimalMutations=3)
 
 }

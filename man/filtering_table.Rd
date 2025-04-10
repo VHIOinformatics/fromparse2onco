@@ -2,7 +2,7 @@
 % Please edit documentation in R/filteringtable.R
 \name{filtering_table}
 \alias{filtering_table}
-\title{Filtering Variants Data Frame}
+\title{Filter MAF Data Frame}
 \usage{
 filtering_table(
   to_filter,
@@ -43,7 +43,7 @@ filtering_table(
 A filtered data frame containing variants that meet the specified criteria.
 }
 \description{
-This function filters a data frame of genetic variants based on specified criteria (VAF, READS & FLAGS)
+This function filters a data frame of genetic variants based on specified criteria (VAF, reads & flags)
 }
 \examples{
 # Example usage:

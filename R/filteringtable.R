@@ -1,6 +1,6 @@
-#' Filtering Variants Data Frame
+#' Filter MAF Data Frame
 #'
-#' This function filters a data frame of genetic variants based on specified criteria (VAF, READS & FLAGS)
+#' This function filters a data frame of genetic variants based on specified criteria (VAF, reads & flags)
 #'
 #' @param to_filter A data frame containing the variants to be filtered.
 #' @param tumor_only A logical value indicating if only tumor samples should be considered. Default is FALSE.

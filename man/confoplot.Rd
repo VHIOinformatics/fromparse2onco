@@ -2,7 +2,7 @@
 % Please edit documentation in R/confoplot.R
 \name{confoplot}
 \alias{confoplot}
-\title{Configure Oncoplot Colors and Shapes}
+\title{Make Oncoplot}
 \usage{
 confoplot(
   Missense_color = "#2a9134",
@@ -39,12 +39,12 @@ confoplot(
 \item{Multihit_color}{Color for multi-hit genes. Default is "#dab49d".}
 }
 \value{
-A list containing the color configuration and alteration function for the oncoplot.
+An oncoplot object which is also saved as a png file.
 }
 \description{
-This function configures the colors and shapes used in oncoplots for various types of mutations.
+This function imports an onco_matrix.txt file in the working directory and makes an oncoplot using the oncoPrint function in maftools package.
 }
 \examples{
-#color_config <- confoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
+#oncoplot <- confoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
 
 }
