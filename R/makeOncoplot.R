@@ -9,7 +9,7 @@
 #' @param FrameIns_color Color for frame shift insertions. Default is "purple".
 #' @param In_Frame_Ins_color Color for in-frame insertions. Default is "lightblue".
 #' @param In_Frame_Del_color Color for in-frame deletions. Default is "plum1".
-#' @param Tranlsation_Start_Site_color Color for translation start sites. Default is "#ff0a54".
+#' @param Translation_Start_Site_color Color for translation start sites. Default is "#ff0a54".
 #' @param Splice_site_color Color for splicing sites. Default is "darkorange".
 #' @param Multihit_color Color for multi-hit genes. Default is "#dab49d".
 #'
@@ -23,11 +23,11 @@
 #' @import ComplexHeatmap
 #'
 #' @examples
-#' #oncoplot <- confoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
+#' #oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
 #'
 #' @export
 
-confoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Tranlsation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d") {
+makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d") {
 
   # Read the oncoplot matrix
   onco.matrix <- as.matrix(read.table("onco_matrix.txt", header = TRUE, sep = '\t', quote = ""))
@@ -44,7 +44,7 @@ confoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonsto
            Frameshift_Ins = FrameIns_color,
            In_Frame_Ins = In_Frame_Ins_color,
            In_Frame_Del = In_Frame_Del_color,
-           Translation_Start_Site = Tranlsation_Start_Site_color,
+           Translation_Start_Site = Translation_Start_Site_color,
            Splice_Site = Splice_site_color,
            Multi_Hit = Multihit_color)
 

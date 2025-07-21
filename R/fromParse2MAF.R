@@ -3,21 +3,21 @@
 #' This function reads variant data from one or more Excel files produced by parse_variants program and processes it in order to match MAF format specifications.
 #'
 #' @param path_to_parse A vector of paths to the excel files to be read.
-#' @param tumor_only A logical value indicating if only tumor data should be processed. Default is FALSE.
+#' @param tumor_only A logical value indicating if variant calling was performed in tumor only mode. Default is FALSE, indicating it was performed in paired mode.
 #' @param oncokb A logical value indicating whether OncoKB annotation was performed. Default is FALSE.
 #' @param cgi A logical value indicating whether CGI annotation was performed. Default is FALSE.
 #'
-#' @return A data frame containing the processed variant data.
+#' @return A data frame containing the processed variant data in MAF format.
 #' @import readxl
 #' @import dplyr
 #' @import stringr
 #' @import purrr
 #' @examples
 #' # Example usage:
-#' # variants_df <- fromparse2table(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
+#' # variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
-fromparse2table <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
+fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
   # Read the variants data from one or multiple excel files
   variants_df <- do.call(rbind, lapply(path_to_parse, 
                                              function(i) {
