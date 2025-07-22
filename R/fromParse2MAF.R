@@ -28,7 +28,7 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
   # Process data based on tumor_only flag
   if (tumor_only) {
     # Columns to convert to numeric for tumor-only mode
-    numeric_columns <- c("POS", "ADref", "ADalt", "DPtootal", "VAF")
+    numeric_columns <- c("POS", "ADref", "ADalt", "DPtotal", "VAF")
 
     # Mapping of column names to new names for tumor-only mode
     rename_map <- list(
@@ -46,7 +46,7 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
       "AAChange_refGene" = "HGVS.p",
       "ReferenceReads_TumorSample" = "ADref",
       "AlternativeReads_TumorSample" = "ADalt",
-      "TotalReads" = "DPtootal",
+      "TotalReads" = "DPtotal",
       "VAF" = "VAF"
     )
   } else {
