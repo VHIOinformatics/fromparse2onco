@@ -34,6 +34,9 @@
 #' @param Translation_Start_Site_color Color for translation start sites. Default is "#ff0a54".
 #' @param Splice_site_color Color for splicing sites. Default is "darkorange".
 #' @param Multihit_color Color for multi-hit genes. Default is "#dab49d".
+#' @param show_row_names Whether to show gene names. Default is TRUE.
+#' @param show_pct Whether to show percentage of samples mutated per gene. Default is TRUE.
+#' @param output Output file name (with png extension). Default is "oncoplot.png".
 #' 
 #' @return An oncoplot object which is also saved as a png file.
 #'
@@ -46,14 +49,14 @@
 #' @import ComplexHeatmap
 #'
 #' @examples
-#' oncobuddy <-fromParse2Onco(path_to_parse = c("/path/to/file1","/path/to/file2"), VAF_tumor=0.05, minimalMutations=3, Missense_color="#FF5733")
+#' oncobuddy <-fromParse2Onco(path_to_parse = c("/path/to/file1","/path/to/file2"), VAF_tumor=0.05, minimalMutations=3, Missense_color="#FF5733", output ="my_oncoplot.png")
 #' 
 #' @export
 
 fromParse2Onco <- function(path_to_parse,tumor_only = FALSE,
                            filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL,
                            remove=TRUE, flags=FALSE, minimalMutations = 2, topgenes = 20000, nonSyn=c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation"),
-                           Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d")
+                           Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names=TRUE, show_pct=TRUE, output="oncoplot.png")
                            {
   
   # Read parse_variants output and convert to MAF
@@ -66,7 +69,7 @@ fromParse2Onco <- function(path_to_parse,tumor_only = FALSE,
   prepareForOncoplot(filtered_df, remove, flags, minimalMutations, topgenes, nonSyn)
   
   # Make oncoplot
-  oncoplot <- makeOncoplot(Missense_color, Nonsense_color, Nonstop_color, FrameDel_color, FrameIns_color, In_Frame_Ins_color, In_Frame_Del_color, Translation_Start_Site_color, Splice_site_color, Multihit_color)
+  oncoplot <- makeOncoplot(Missense_color, Nonsense_color, Nonstop_color, FrameDel_color, FrameIns_color, In_Frame_Ins_color, In_Frame_Del_color, Translation_Start_Site_color, Splice_site_color, Multihit_color, show_row_names, show_pct, output)
   
   return(oncoplot)
 }

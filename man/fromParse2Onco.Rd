@@ -36,7 +36,10 @@ fromParse2Onco(
   In_Frame_Del_color = "plum1",
   Translation_Start_Site_color = "#ff0a54",
   Splice_site_color = "darkorange",
-  Multihit_color = "#dab49d"
+  Multihit_color = "#dab49d",
+  show_row_names = TRUE,
+  show_pct = TRUE,
+  output = "oncoplot.png"
 )
 }
 \arguments{
@@ -97,6 +100,12 @@ fromParse2Onco(
 \item{Splice_site_color}{Color for splicing sites. Default is "darkorange".}
 
 \item{Multihit_color}{Color for multi-hit genes. Default is "#dab49d".}
+
+\item{show_row_names}{Whether to show gene names. Default is TRUE.}
+
+\item{show_pct}{Whether to show percentage of samples mutated per gene. Default is TRUE.}
+
+\item{output}{Output file name (with png extension). Default is "oncoplot.png".}
 }
 \value{
 An oncoplot object which is also saved as a png file.
@@ -105,6 +114,6 @@ An oncoplot object which is also saved as a png file.
 This function reads one or more Excel files produced by parseVCF program and makes and oncoplot.
 }
 \examples{
-oncobuddy <-fromParse2Onco(path_to_parse = c("/path/to/file1","/path/to/file2"), VAF_tumor=0.05, minimalMutations=3, Missense_color="#FF5733")
+oncobuddy <-fromParse2Onco(path_to_parse = c("/path/to/file1","/path/to/file2"), VAF_tumor=0.05, minimalMutations=3, Missense_color="#FF5733", output ="my_oncoplot.png")
 
 }

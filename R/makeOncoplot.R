@@ -12,6 +12,9 @@
 #' @param Translation_Start_Site_color Color for translation start sites. Default is "#ff0a54".
 #' @param Splice_site_color Color for splicing sites. Default is "darkorange".
 #' @param Multihit_color Color for multi-hit genes. Default is "#dab49d".
+#' @param show_row_names Whether to show gene names. Default is TRUE.
+#' @param show_pct Whether to show percentage of samples mutated per gene. Default is TRUE.
+#' @param output Output file name (with png extension). Default is "oncoplot.png".
 #'
 #' @return An oncoplot object which is also saved as a png file.
 #'
@@ -23,11 +26,11 @@
 #' @import ComplexHeatmap
 #'
 #' @examples
-#' oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
+#' oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57", output = "my_oncoplot.png")
 #'
 #' @export
 
-makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d") {
+makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names = TRUE, show_pct = TRUE, output="oncoplot.png") {
 
   # Read the oncoplot matrix
   onco.matrix <- as.matrix(read.table("onco_matrix.txt", header = TRUE, sep = '\t', quote = ""))
@@ -46,7 +49,14 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
            In_Frame_Del = In_Frame_Del_color,
            Translation_Start_Site = Translation_Start_Site_color,
            Splice_Site = Splice_site_color,
-           Multi_Hit = Multihit_color)
+           Multi_Hit = Multihit_color,
+	   Intron = "maroon",
+           IGR = "aquamarine",
+           `3'Flank` = "lightsalmon3",
+           `5'Flank` = "yellow2",
+           RNA = "yellowgreen",
+           `3'UTR` = "firebrick2",
+           `5'UTR` = "mediumpurple1")
 
   # Assign shapes for each type of mutation
   alter_fun <- list(
@@ -90,21 +100,49 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
     In_Frame_Del = alter_graphic("rect",
                                  width = 1,
                                  height = 1,
-                                 fill = col["In_Frame_Del"]))
+                                 fill = col["In_Frame_Del"]),
+    Intron = alter_graphic("rect",
+                                 width = 1,
+                                 height = 1,
+                                 fill = col["Intron"]),
+    IGR = alter_graphic("rect",
+                                 width = 1,
+                                 height = 1,
+                                 fill = col["IGR"]),
+    `3'Flank` = alter_graphic("rect",
+                                 width = 1,
+                                 height = 1,
+                                 fill = col["3'Flank"]),
+    RNA = alter_graphic("rect",
+                                 width = 1,
+                                 height = 1,
+                                 fill = col["RNA"]),
+    `5'Flank` = alter_graphic("rect",
+                                 width = 1,
+                                 height = 1,
+                                 fill = col["5'Flank"]),
+    `3'UTR` = alter_graphic("rect",
+                                 width = 1,
+                                 height = 1,
+                                 fill = col["3'UTR"]),
+    `5'UTR` = alter_graphic("rect",
+                                 width = 1,
+                                 height = 1,
+                                 fill = col["5'UTR"]))
   
   #Execute oncoPrint
   p <- ComplexHeatmap::oncoPrint(mat = onco.matrix, col = col, 
                                  alter_fun = alter_fun, alter_fun_is_vectorized = FALSE, 
-                                 show_row_names = TRUE,
+                                 show_row_names = show_row_names,
                                  pct_side = "right",
                                  row_names_gp = gpar(fontsize = 10,fontface = "italic"),
-                                 show_pct = TRUE,
+                                 show_pct = show_pct,
                                  column_names_side = c("bottom"), 
                                  show_column_names = TRUE,
                                  show_heatmap_legend = TRUE,
                                  column_order = order(apply(onco.matrix,2,function(x){length(which(x != ""))} ), decreasing = TRUE),
                                  row_names_side = "left")
-  png("oncoplot.png", width = 2000, height = 1200, res = 150)
+  png(output, width = 2000, height = 1200, res = 150)
   draw(p)
   dev.off()
   

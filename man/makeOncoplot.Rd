@@ -14,7 +14,10 @@ makeOncoplot(
   In_Frame_Del_color = "plum1",
   Translation_Start_Site_color = "#ff0a54",
   Splice_site_color = "darkorange",
-  Multihit_color = "#dab49d"
+  Multihit_color = "#dab49d",
+  show_row_names = TRUE,
+  show_pct = TRUE,
+  output = "oncoplot.png"
 )
 }
 \arguments{
@@ -37,6 +40,12 @@ makeOncoplot(
 \item{Splice_site_color}{Color for splicing sites. Default is "darkorange".}
 
 \item{Multihit_color}{Color for multi-hit genes. Default is "#dab49d".}
+
+\item{show_row_names}{Whether to show gene names. Default is TRUE.}
+
+\item{show_pct}{Whether to show percentage of samples mutated per gene. Default is TRUE.}
+
+\item{output}{Output file name (with png extension). Default is "oncoplot.png".}
 }
 \value{
 An oncoplot object which is also saved as a png file.
@@ -45,6 +54,6 @@ An oncoplot object which is also saved as a png file.
 This function imports an onco_matrix.txt file in the working directory and makes an oncoplot using the oncoPrint function in ComplexHeatmap package.
 }
 \examples{
-oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
+oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57", output = "my_oncoplot.png")
 
 }
