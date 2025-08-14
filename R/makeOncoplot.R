@@ -1,6 +1,6 @@
 #' Make Oncoplot
 #'
-#' This function imports an onco_matrix.txt file in the working directory and makes an oncoplot using the oncoPrint function in maftools package.
+#' This function imports an onco_matrix.txt file in the working directory and makes an oncoplot using the oncoPrint function in ComplexHeatmap package.
 #'
 #' @param Missense_color Color for missense variants. Default is "#2a9134".
 #' @param Nonsense_color Color for nonsense variants. Default is "#ffca3a".
@@ -23,7 +23,7 @@
 #' @import ComplexHeatmap
 #'
 #' @examples
-#' #oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
+#' oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
 #'
 #' @export
 

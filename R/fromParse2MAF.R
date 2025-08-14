@@ -1,6 +1,6 @@
-#' Read parse_variants Output and Convert To MAF
+#' Read parseVCF Output and Convert To MAF
 #'
-#' This function reads variant data from one or more Excel files produced by parse_variants program and processes it in order to match MAF format specifications.
+#' This function reads variant data from one or more Excel files produced by parseVCF program and processes it in order to match MAF format specifications.
 #'
 #' @param path_to_parse A vector of paths to the excel files to be read.
 #' @param tumor_only A logical value indicating if variant calling was performed in tumor only mode. Default is FALSE, indicating it was performed in paired mode.
@@ -12,9 +12,9 @@
 #' @import dplyr
 #' @import stringr
 #' @import purrr
+#'
 #' @examples
-#' # Example usage:
-#' # variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
+#' variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
 fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
@@ -112,6 +112,65 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
              dif_len > 0 ~ 'INS',
              dif_len < 0 ~ 'DEL'
            ))
+  
+  # Replace specific strings in the Annotation (Variant_Classification) column
+  variants_df <- variants_df %>%
+    mutate(
+      Variant_Classification = str_replace(Variant_Classification,
+                                           "prime_UTR_truncation&exon_loss_variant",
+                                           "prime_UTR_truncation+exon_loss_variant"),
+      # Create a new column 'disgreggation' by removing '&' and subsequent characters
+      disgreggation = str_remove(Variant_Classification, "&.*")
+    )
+
+  # Define a named list of patterns and their corresponding classifications
+  classification_patterns <- list(
+    "Splice_Site" = "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon
+_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
+    "Nonsense_Mutation" = "stop_gained",
+    "Frame_Shift_Del" = "frameshift_variant",
+    "Frame_Shift_Ins" = "frameshift_variant",
+    "Nonstop_Mutation" = "stop_lost",
+    "Translation_Start_Site" = "initiator_codon_variant|start_lost",
+    "In_Frame_Ins" = "inframe_insertion",
+    "In_Frame_Del" = "inframe_deletion",
+    "Missense_Mutation" = "missense_variant|coding_sequence_variant|rare_amino_acid_variant",
+    "Intron" = "transcript_amplification|intron_variant|intragenic_variant",
+    "Silent" = "synonymous_variant|stop_retained_variant|NMD_transcript_variant|start_retained",
+    "RNA" = "mature_miRNA_variant|exon_variant|non_coding_exon_variant|non_coding_transcript|nc_transcript_variant",
+    "5'UTR" = "5_prime_UTR_variant|5_prime_UTR_premature_start_codon_gain_variant",
+    "3'UTR" = "3_prime_UTR_variant",
+    "IGR" = "TF_binding_site_variant|regulatory_region|intergenic",
+    "5'Flank" = "upstream_gene_variant",
+    "3'Flank" = "downstream_gene_variant",
+    "Gene_Fusion" = "gene_fusion"
+  )
+
+  # Apply patterns to classify Variant_Classification
+  variants_df <- variants_df %>%
+    mutate(
+      Variant_Classification = case_when(
+        grepl(classification_patterns[["Splice_Site"]], disgreggation) ~ "Splice_Site",
+        grepl(classification_patterns[["Nonsense_Mutation"]], disgreggation) ~ "Nonsense_Mutation",
+        grepl(classification_patterns[["Frame_Shift_Del"]], disgreggation) & Variant_Type == "DEL" ~ "Frame_Shift_Del",
+        grepl(classification_patterns[["Frame_Shift_Ins"]], disgreggation) & Variant_Type == "INS" ~ "Frame_Shift_Ins",
+        grepl(classification_patterns[["Nonstop_Mutation"]], disgreggation) ~ "Nonstop_Mutation",
+        grepl(classification_patterns[["Translation_Start_Site"]], disgreggation) ~ "Translation_Start_Site",
+        grepl(classification_patterns[["In_Frame_Ins"]], disgreggation) & Variant_Type == "INS" ~ "In_Frame_Ins",
+        grepl(classification_patterns[["In_Frame_Del"]], disgreggation) & Variant_Type == "DEL" ~ "In_Frame_Del",
+        grepl(classification_patterns[["Missense_Mutation"]], disgreggation) ~ "Missense_Mutation",
+        grepl(classification_patterns[["Intron"]], disgreggation) ~ "Intron",
+        grepl(classification_patterns[["Silent"]], disgreggation) ~ "Silent",
+        grepl(classification_patterns[["RNA"]], disgreggation) ~ "RNA",
+        grepl(classification_patterns[["5'UTR"]], disgreggation) ~ "5'UTR",
+        grepl(classification_patterns[["3'UTR"]], disgreggation) ~ "3'UTR",
+        grepl(classification_patterns[["IGR"]], disgreggation) ~ "IGR",
+        grepl(classification_patterns[["5'Flank"]], disgreggation) ~ "5'Flank",
+        grepl(classification_patterns[["3'Flank"]], disgreggation) ~ "3'Flank",
+        grepl(classification_patterns[["Gene_Fusion"]], disgreggation) ~ "Gene_Fusion",
+        TRUE ~ Variant_Classification
+      )
+    ) 
 
   return(variants_df)
 }

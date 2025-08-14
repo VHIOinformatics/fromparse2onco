@@ -35,7 +35,6 @@ It prints summary plots and saves the oncomatrix (onco_matrix.txt) and the TMB t
 This function takes a MAF dataframe, filters it and creates an oncomatrix. It also prints summary plots and creates a TMB table. It does so by executing functions in maftools package.
 }
 \examples{
-# Example usage:
-# prepareForOncoplot(filtered_df, minimalMutations=3)
+prepareForOncoplot(filtered_df, minimalMutations=3)
 
 }

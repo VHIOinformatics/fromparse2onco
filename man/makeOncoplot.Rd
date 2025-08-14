@@ -12,7 +12,7 @@ makeOncoplot(
   FrameIns_color = "purple",
   In_Frame_Ins_color = "lightblue",
   In_Frame_Del_color = "plum1",
-  Tranlsation_Start_Site_color = "#ff0a54",
+  Translation_Start_Site_color = "#ff0a54",
   Splice_site_color = "darkorange",
   Multihit_color = "#dab49d"
 )
@@ -32,7 +32,7 @@ makeOncoplot(
 
 \item{In_Frame_Del_color}{Color for in-frame deletions. Default is "plum1".}
 
-\item{Tranlsation_Start_Site_color}{Color for translation start sites. Default is "#ff0a54".}
+\item{Translation_Start_Site_color}{Color for translation start sites. Default is "#ff0a54".}
 
 \item{Splice_site_color}{Color for splicing sites. Default is "darkorange".}
 
@@ -42,9 +42,9 @@ makeOncoplot(
 An oncoplot object which is also saved as a png file.
 }
 \description{
-This function imports an onco_matrix.txt file in the working directory and makes an oncoplot using the oncoPrint function in maftools package.
+This function imports an onco_matrix.txt file in the working directory and makes an oncoplot using the oncoPrint function in ComplexHeatmap package.
 }
 \examples{
-#oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
+oncoplot <- makeOncoplot(Missense_color="#FF5733", Nonsense_color="#33FF57")
 
 }

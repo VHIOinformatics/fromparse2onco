@@ -2,7 +2,7 @@
 % Please edit documentation in R/fromParse2Onco.R
 \name{fromParse2Onco}
 \alias{fromParse2Onco}
-\title{Convert output of parse_variants program into an oncoplot}
+\title{Convert output of parseVCF program into an oncoplot}
 \usage{
 fromParse2Onco(
   path_to_parse,
@@ -34,7 +34,7 @@ fromParse2Onco(
   FrameIns_color = "purple",
   In_Frame_Ins_color = "lightblue",
   In_Frame_Del_color = "plum1",
-  Tranlsation_Start_Site_color = "#ff0a54",
+  Translation_Start_Site_color = "#ff0a54",
   Splice_site_color = "darkorange",
   Multihit_color = "#dab49d"
 )
@@ -92,7 +92,7 @@ fromParse2Onco(
 
 \item{In_Frame_Del_color}{Color for in-frame deletions. Default is "plum1".}
 
-\item{Tranlsation_Start_Site_color}{Color for translation start sites. Default is "#ff0a54".}
+\item{Translation_Start_Site_color}{Color for translation start sites. Default is "#ff0a54".}
 
 \item{Splice_site_color}{Color for splicing sites. Default is "darkorange".}
 
@@ -102,7 +102,7 @@ fromParse2Onco(
 An oncoplot object which is also saved as a png file.
 }
 \description{
-This function reads one or more Excel files produced by parse_variants program and makes and oncoplot.
+This function reads one or more Excel files produced by parseVCF program and makes and oncoplot.
 }
 \examples{
 oncobuddy <-fromParse2Onco(path_to_parse = c("/path/to/file1","/path/to/file2"), VAF_tumor=0.05, minimalMutations=3, Missense_color="#FF5733")

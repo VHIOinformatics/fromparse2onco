@@ -18,9 +18,10 @@
 #' @param control_samples_out Vector of control samples names to remove (this makes sense when the same tumor sample has been analysed using different control samples as germline control).
 #'
 #' @return A filtered data frame containing variants that meet the specified criteria.
+#'
 #' @examples
-#' # Example usage:
-#' # filtered_df <- filterMAF(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
+#' filtered_df <- filterMAF(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
+#'
 #' @export
 filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL) {
   # Initialize the filtered table with base conditions
@@ -90,63 +91,8 @@ filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_
 
 
   }
-  # Replace specific strings in the Annotation column
+  # Remove rows with NA in Variant_Classification
   filter_conditions <- filter_conditions %>%
-    mutate(
-      Variant_Classification = str_replace(Variant_Classification,
-                                           "prime_UTR_truncation&exon_loss_variant",
-                                           "prime_UTR_truncation+exon_loss_variant"),
-      # Create a new column 'disgreggation' by removing '&' and subsequent characters
-      disgreggation = str_remove(Variant_Classification, "&.*")
-    )
-
-  # Define a named list of patterns and their corresponding classifications
-  classification_patterns <- list(
-    "Splice_Site" = "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
-    "Nonsense_Mutation" = "stop_gained",
-    "Frame_Shift_Del" = "frameshift_variant",
-    "Frame_Shift_Ins" = "frameshift_variant",
-    "Nonstop_Mutation" = "stop_lost",
-    "Translation_Start_Site" = "initiator_codon_variant|start_lost",
-    "In_Frame_Ins" = "inframe_insertion",
-    "In_Frame_Del" = "inframe_deletion",
-    "Missense_Mutation" = "missense_variant|coding_sequence_variant|rare_amino_acid_variant",
-    "Intron" = "transcript_amplification|intron_variant|intragenic_variant",
-    "Silent" = "synonymous_variant|stop_retained_variant|NMD_transcript_variant|start_retained",
-    "RNA" = "mature_miRNA_variant|exon_variant|non_coding_exon_variant|non_coding_transcript|nc_transcript_variant",
-    "5'UTR" = "5_prime_UTR_variant|5_prime_UTR_premature_start_codon_gain_variant",
-    "3'UTR" = "3_prime_UTR_variant",
-    "IGR" = "TF_binding_site_variant|regulatory_region|intergenic",
-    "5'Flank" = "upstream_gene_variant",
-    "3'Flank" = "downstream_gene_variant",
-    "Gene_Fusion" = "gene_fusion"
-  )
-
-  # Apply patterns to classify Variant_Classification
-  filter_conditions <- filter_conditions %>%
-    mutate(
-      Variant_Classification = case_when(
-        grepl(classification_patterns[["Splice_Site"]], disgreggation) ~ "Splice_Site",
-        grepl(classification_patterns[["Nonsense_Mutation"]], disgreggation) ~ "Nonsense_Mutation",
-        grepl(classification_patterns[["Frame_Shift_Del"]], disgreggation) & Variant_Type == "DEL" ~ "Frame_Shift_Del",
-        grepl(classification_patterns[["Frame_Shift_Ins"]], disgreggation) & Variant_Type == "INS" ~ "Frame_Shift_Ins",
-        grepl(classification_patterns[["Nonstop_Mutation"]], disgreggation) ~ "Nonstop_Mutation",
-        grepl(classification_patterns[["Translation_Start_Site"]], disgreggation) ~ "Translation_Start_Site",
-        grepl(classification_patterns[["In_Frame_Ins"]], disgreggation) & Variant_Type == "INS" ~ "In_Frame_Ins",
-        grepl(classification_patterns[["In_Frame_Del"]], disgreggation) & Variant_Type == "DEL" ~ "In_Frame_Del",
-        grepl(classification_patterns[["Missense_Mutation"]], disgreggation) ~ "Missense_Mutation",
-        grepl(classification_patterns[["Intron"]], disgreggation) ~ "Intron",
-        grepl(classification_patterns[["Silent"]], disgreggation) ~ "Silent",
-        grepl(classification_patterns[["RNA"]], disgreggation) ~ "RNA",
-        grepl(classification_patterns[["5'UTR"]], disgreggation) ~ "5'UTR",
-        grepl(classification_patterns[["3'UTR"]], disgreggation) ~ "3'UTR",
-        grepl(classification_patterns[["IGR"]], disgreggation) ~ "IGR",
-        grepl(classification_patterns[["5'Flank"]], disgreggation) ~ "5'Flank",
-        grepl(classification_patterns[["3'Flank"]], disgreggation) ~ "3'Flank",
-        grepl(classification_patterns[["Gene_Fusion"]], disgreggation) ~ "Gene_Fusion",
-        TRUE ~ Variant_Classification
-      )
-    ) %>%
     filter(!is.na(Variant_Classification))  # Remove rows with NA classifications
   # Return the filtered table
   return(filter_conditions)

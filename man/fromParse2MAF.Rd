@@ -2,7 +2,7 @@
 % Please edit documentation in R/fromParse2MAF.R
 \name{fromParse2MAF}
 \alias{fromParse2MAF}
-\title{Read parse_variants Output and Convert To MAF}
+\title{Read parseVCF Output and Convert To MAF}
 \usage{
 fromParse2MAF(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE)
 }
@@ -19,10 +19,9 @@ fromParse2MAF(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE)
 A data frame containing the processed variant data in MAF format.
 }
 \description{
-This function reads variant data from one or more Excel files produced by parse_variants program and processes it in order to match MAF format specifications.
+This function reads variant data from one or more Excel files produced by parseVCF program and processes it in order to match MAF format specifications.
 }
 \examples{
-# Example usage:
-# variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
+variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 
 }

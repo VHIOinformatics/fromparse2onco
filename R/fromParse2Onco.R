@@ -1,6 +1,6 @@
-#' Convert output of parse_variants program into an oncoplot
+#' Convert output of parseVCF program into an oncoplot
 #'
-#' This function reads one or more Excel files produced by parse_variants program and makes and oncoplot.
+#' This function reads one or more Excel files produced by parseVCF program and makes and oncoplot.
 #'
 #' @param path_to_parse A vector of paths to the excel files to be read.
 #' @param tumor_only A logical value indicating if variant calling was performed in tumor only mode. Default is FALSE, indicating it was performed in paired mode.

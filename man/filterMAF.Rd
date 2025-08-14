@@ -58,6 +58,6 @@ A filtered data frame containing variants that meet the specified criteria.
 This function filters a data frame of genetic variants based on specified criteria (VAF, reads & flags). It also allows the removal of tumor or control samples.
 }
 \examples{
-# Example usage:
-# filtered_df <- filterMAF(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
+filtered_df <- filterMAF(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
+
 }

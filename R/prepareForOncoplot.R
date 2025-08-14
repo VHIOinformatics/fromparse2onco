@@ -16,8 +16,7 @@
 #' @import stringr
 #' 
 #' @examples
-#' # Example usage:
-#' # prepareForOncoplot(filtered_df, minimalMutations=3)
+#' prepareForOncoplot(filtered_df, minimalMutations=3)
 #'
 #' @export
 prepareForOncoplot <- function(maf_df, remove=TRUE, flags=FALSE, minimalMutations = 2, topgenes = 20000, nonSyn=c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation")) {
