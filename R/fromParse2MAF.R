@@ -17,7 +17,7 @@
 #' variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
-fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
+fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE,cosmic=FALSE,cosmicpref="COSMIC99") {
   # Read the variants data from one or multiple excel files
   variants_df <- do.call(rbind, lapply(path_to_parse, 
                                              function(i) {
@@ -90,6 +90,14 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
   if (oncokb) {
     rename_map <- c(rename_map, "OncoKB" = "OncoKB")
   }
+  
+  if (cosmic) {
+    codingcol <- paste0(cosmicpref, "_Coding")
+    noncodingcol <- paste0(cosmicpref, "_nonCoding") 
+    rename_map <- c(rename_map,
+                    "COSMIC_Coding" = codingcol,
+                    "COSMIC_nonCoding" = noncodingcol)
+  }
   # Apply transformations:
   # 1. Convert specified columns to numeric (if they exist).
   # 2. Rename columns based on the rename_map.
@@ -125,8 +133,7 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
 
   # Define a named list of patterns and their corresponding classifications
   classification_patterns <- list(
-    "Splice_Site" = "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon
-_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
+    "Splice_Site" = "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
     "Nonsense_Mutation" = "stop_gained",
     "Frame_Shift_Del" = "frameshift_variant",
     "Frame_Shift_Ins" = "frameshift_variant",

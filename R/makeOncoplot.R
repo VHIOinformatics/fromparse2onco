@@ -30,7 +30,7 @@
 #'
 #' @export
 
-makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names = TRUE, show_pct = TRUE, output="oncoplot.png") {
+makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names = TRUE, show_pct = TRUE, output="oncoplot.png", topx = 50) {
 
   # Read the oncoplot matrix
   onco.matrix <- as.matrix(read.table("onco_matrix.txt", header = TRUE, sep = '\t', quote = ""))
@@ -130,8 +130,14 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
                                  height = 1,
                                  fill = col["5'UTR"]))
   
+  freq_onco_matrix <- rowSums(onco.matrix != "")
+  
+  freq_onco_matrix_toplot <- onco.matrix[order(freq_onco_matrix, decreasing = TRUE), ]
+  
+  topx_mat <- freq_onco_matrix_toplot[1:topx, ]
+  
   #Execute oncoPrint
-  p <- ComplexHeatmap::oncoPrint(mat = onco.matrix, col = col, 
+  p <- ComplexHeatmap::oncoPrint(mat = topx_mat, col = col, 
                                  alter_fun = alter_fun, alter_fun_is_vectorized = FALSE, 
                                  show_row_names = show_row_names,
                                  pct_side = "right",
@@ -140,7 +146,7 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
                                  column_names_side = c("bottom"), 
                                  show_column_names = TRUE,
                                  show_heatmap_legend = TRUE,
-                                 column_order = order(apply(onco.matrix,2,function(x){length(which(x != ""))} ), decreasing = TRUE),
+                                 column_order = order(apply(topx_mat,2,function(x){length(which(x != ""))} ), decreasing = TRUE),
                                  row_names_side = "left")
   png(output, width = 2000, height = 1200, res = 150)
   draw(p)

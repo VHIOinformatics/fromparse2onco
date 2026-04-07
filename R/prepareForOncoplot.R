@@ -19,7 +19,7 @@
 #' prepareForOncoplot(filtered_df, minimalMutations=3)
 #'
 #' @export
-prepareForOncoplot <- function(maf_df, remove=TRUE, flags=FALSE, minimalMutations = 2, topgenes = 20000, nonSyn=c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation")) {
+prepareForOncoplot <- function(maf_df, remove=TRUE, flags=FALSE, minimalMutations = 2, topgenes = 50, nonSyn=c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation")) {
   # Read and summarize MAF file
   maf_object <- maftools::read.maf(maf = maf_df, removeDuplicatedVariants = remove, rmFlags=flags,vc_nonSyn = nonSyn)
   maftools::plotmafSummary(maf = maf_object,

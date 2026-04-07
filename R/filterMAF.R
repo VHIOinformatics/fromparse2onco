@@ -23,7 +23,7 @@
 #' filtered_df <- filterMAF(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
 #'
 #' @export
-filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL) {
+filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cosmic=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL) {
   # Initialize the filtered table with base conditions
   filter_conditions <- to_filter %>%
     # Filter by the specified columns and minimum conditions for VAF and tumor alternative reads
@@ -55,8 +55,11 @@ filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_
       filter_conditions <- filter_conditions %>%
         filter(! Tumor_Sample_Barcode %in% tumor_samples_out)
     }
-
-
+    if (cosmic) {
+      cat("Aplicando filtro Cosmic: eliminando filas con Cosmic_99coding y Cosmic_99noncoding vacíos\n")
+      filter_conditions <- filter_conditions %>%
+        filter(COSMIC_Coding != "" | COSMIC_nonCoding != "")
+    }
 
   } else {
     # If not only tumor, add conditions for normal reads and control VAF
@@ -75,6 +78,12 @@ filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_
       filter_conditions <- filter_conditions %>%
         filter(OncoKB %in% oncokb_list)
     }
+    
+    if (cosmic) {
+      cat("Aplicando filtro Cosmic: eliminando filas con Cosmic_99coding y Cosmic_99noncoding vacíos\n")
+      filter_conditions <- filter_conditions %>%
+        filter(COSMIC99_Coding != "" | COSMIC99_nonCoding != "")
+    }
 
     # If tumor_samples_out is not NULL, filter them out
     if (length(tumor_samples_out) > 0) {
@@ -87,8 +96,6 @@ filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_
       filter_conditions <- filter_conditions %>%
         filter(! Control %in% control_samples_out)
     }
-
-
 
   }
   # Remove rows with NA in Variant_Classification
