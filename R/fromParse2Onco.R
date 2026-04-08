@@ -54,23 +54,24 @@
 #' @export
 
 fromParse2Onco <- function(path_to_parse,tumor_only = FALSE,
-                           filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL,
+                           filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cosmic = FALSE,cosmicpref="COSMIC99", cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL,
                            remove=TRUE, flags=FALSE, minimalMutations = 2, topgenes = 20000, nonSyn=c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation"),
-                           Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names=TRUE, show_pct=TRUE, output="oncoplot.png")
+                           Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names=TRUE, show_pct=TRUE, output="oncoplot.png", absent = NULL, topx = 50)
                            {
   
   # Read parse_variants output and convert to MAF
-  variants_df <- fromParse2MAF(path_to_parse = path_to_parse, tumor_only, oncokb, cgi)
+  variants_df <- fromParse2MAF(path_to_parse = path_to_parse, tumor_only, oncokb, cgi, cosmic, cosmicpref)
   
   # Filter MAF data frame
-  filtered_df <- filterMAF(variants_df, tumor_only, filter_column, VAF_tumor, VAF_control, total_tumor_reads, alt_tumor_reads, cgi, oncokb, cgi_list, oncokb_list, annott, tumor_samples_out, control_samples_out)
+  filtered_df <- filterMAF(variants_df, tumor_only, filter_column, VAF_tumor, VAF_control, total_tumor_reads, alt_tumor_reads, cgi, oncokb, cosmic,cgi_list, oncokb_list, annott, tumor_samples_out, control_samples_out)
   
   # Create oncomatrix from MAF data frame
   prepareForOncoplot(filtered_df, remove, flags, minimalMutations, topgenes, nonSyn)
   
   # Make oncoplot
-  oncoplot <- makeOncoplot(Missense_color, Nonsense_color, Nonstop_color, FrameDel_color, FrameIns_color, In_Frame_Ins_color, In_Frame_Del_color, Translation_Start_Site_color, Splice_site_color, Multihit_color, show_row_names, show_pct, output)
+  oncoplot <- makeOncoplot(Missense_color, Nonsense_color, Nonstop_color, FrameDel_color, FrameIns_color, In_Frame_Ins_color, In_Frame_Del_color, Translation_Start_Site_color, Splice_site_color, Multihit_color, show_row_names, show_pct, output, topx, absent)
   
   return(oncoplot)
 }
+
 

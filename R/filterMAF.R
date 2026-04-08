@@ -16,6 +16,7 @@
 #' @param annott Vector of Annotation Impact labels from SnpEff to keep.
 #' @param tumor_samples_out Vector of tumor samples names to remove.
 #' @param control_samples_out Vector of control samples names to remove (this makes sense when the same tumor sample has been analysed using different control samples as germline control).
+#' @param cosmic A logical value indicating if the Cosmic columns should be used to filter. Default is FALSE
 #'
 #' @return A filtered data frame containing variants that meet the specified criteria.
 #'
@@ -55,8 +56,11 @@ filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_
       filter_conditions <- filter_conditions %>%
         filter(! Tumor_Sample_Barcode %in% tumor_samples_out)
     }
+    #NEW FEATURE: Now it is possible to filter by Cosmic presence. 
+    #To use it you have to set Cosmic=TRUE and add the prefix of the version of Cosmic
+    #Cosmic="COSMIC992
     if (cosmic) {
-      cat("Aplicando filtro Cosmic: eliminando filas con Cosmic_99coding y Cosmic_99noncoding vacíos\n")
+      cat("Applying Cosmic filter: removing rows with empty Cosmic columns\n")
       filter_conditions <- filter_conditions %>%
         filter(COSMIC_Coding != "" | COSMIC_nonCoding != "")
     }
@@ -78,9 +82,11 @@ filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_
       filter_conditions <- filter_conditions %>%
         filter(OncoKB %in% oncokb_list)
     }
-    
+    #NEW FEATURE: Now it is possible to filter by Cosmic presence. 
+    #To use it you have to set Cosmic=TRUE and add the prefix of the version of Cosmic
+    #Cosmic="COSMIC992
     if (cosmic) {
-      cat("Aplicando filtro Cosmic: eliminando filas con Cosmic_99coding y Cosmic_99noncoding vacíos\n")
+      cat("Applying Cosmic filter: removing rows with empty Cosmic columns\n")
       filter_conditions <- filter_conditions %>%
         filter(COSMIC99_Coding != "" | COSMIC99_nonCoding != "")
     }

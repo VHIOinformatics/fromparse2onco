@@ -15,6 +15,8 @@
 #' @param show_row_names Whether to show gene names. Default is TRUE.
 #' @param show_pct Whether to show percentage of samples mutated per gene. Default is TRUE.
 #' @param output Output file name (with png extension). Default is "oncoplot.png".
+#' @param topx Number of rows of the desired matrix. Default is 50. Strongly recommended.
+#' @param absent This parameter filters genes that are mutation-free in the specified samples but may be mutated in others.
 #'
 #' @return An oncoplot object which is also saved as a png file.
 #'
@@ -30,7 +32,7 @@
 #'
 #' @export
 
-makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names = TRUE, show_pct = TRUE, output="oncoplot.png", topx = 50) {
+makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names = TRUE, show_pct = TRUE, output="oncoplot.png", topx = 50, absent = NULL) {
 
   # Read the oncoplot matrix
   onco.matrix <- as.matrix(read.table("onco_matrix.txt", header = TRUE, sep = '\t', quote = ""))
@@ -130,11 +132,52 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
                                  height = 1,
                                  fill = col["5'UTR"]))
   
+
+  colnames(onco.matrix) <- sub("^X([0-9])", "\\1", colnames(onco.matrix))
+
+  #NEW: Fix repeated names in columns
+  fix_repeat <- function(samplename) {
+    parts <- strsplit(samplename, "_")[[1]]
+    n <- length(parts)
+    
+    if (n %% 2 != 0) return(samplename)
+    
+    half <- n / 2
+    
+    firsthalf <- parts[1:half]
+    secondhalf <- parts[(half + 1):n]
+    
+    if (identical(firsthalf, secondhalf)) {
+      return(paste(secondhalf, collapse = "_"))
+    } else {
+      return(samplename)
+    }
+  }
+  colnames(onco.matrix) <- unname(sapply(colnames(onco.matrix), fix_repeat))
+  #NEW:Compare variants that are mutated against samples that do not possess these mutations, you need do do a list
+  #This is the new parameter absent
+  if (!is.null(absent) && length(absent) > 0) {
+    # forzar drop = FALSE para mantener dimensión
+    rows_to_keep <- rowSums(onco.matrix[, absent, drop = FALSE] == "") == length(absent)
+    
+    # filtrar filas completas de onco.matrix
+    onco.matrix <- onco.matrix[rows_to_keep, , drop = FALSE]
+  }
+  
+  
+  
+  #New: Create topX matrix to reduce number of genes represented, affordable plot
+  #This is the new parameter topx, put the number of rows desired using topx=x
   freq_onco_matrix <- rowSums(onco.matrix != "")
   
   freq_onco_matrix_toplot <- onco.matrix[order(freq_onco_matrix, decreasing = TRUE), ]
   
-  topx_mat <- freq_onco_matrix_toplot[1:topx, ]
+  if (topx < nrow(onco.matrix)) {
+    topx_mat <- freq_onco_matrix_toplot[1:topx, ]
+  }else{
+    topx_mat <- freq_onco_matrix_toplot
+  }
+
   
   #Execute oncoPrint
   p <- ComplexHeatmap::oncoPrint(mat = topx_mat, col = col, 
@@ -151,7 +194,6 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
   png(output, width = 2000, height = 1200, res = 150)
   draw(p)
   dev.off()
-  
-  return(p)
+  return(p)  
 }
 

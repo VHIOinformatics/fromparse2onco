@@ -6,6 +6,8 @@
 #' @param tumor_only A logical value indicating if variant calling was performed in tumor only mode. Default is FALSE, indicating it was performed in paired mode.
 #' @param oncokb A logical value indicating whether OncoKB annotation was performed. Default is FALSE.
 #' @param cgi A logical value indicating whether CGI annotation was performed. Default is FALSE.
+#' @param cosmic A logical value indicating if the Cosmic columns should be used to filter. Default is FALSE
+#' @param cosmicpref A string value indicating the version of Cosmic used to annotate the files. Default is COSMIC99
 #'
 #' @return A data frame containing the processed variant data in MAF format.
 #' @import readxl
@@ -17,7 +19,7 @@
 #' variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
-fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE,cosmic=FALSE,cosmicpref="COSMIC99") {
+fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE, cosmic=FALSE, cosmicpref="COSMIC99") {
   # Read the variants data from one or multiple excel files
   variants_df <- do.call(rbind, lapply(path_to_parse, 
                                              function(i) {
@@ -90,6 +92,9 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
   if (oncokb) {
     rename_map <- c(rename_map, "OncoKB" = "OncoKB")
   }
+  #NEW FEATURE: Now it is possible to filter by Cosmic presence. 
+  #To use it you have to set Cosmic=TRUE and add the prefix of the version of Cosmic
+  #Cosmic="COSMIC992
   
   if (cosmic) {
     codingcol <- paste0(cosmicpref, "_Coding")
