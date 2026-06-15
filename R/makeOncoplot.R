@@ -15,6 +15,9 @@
 #' @param show_row_names Whether to show gene names. Default is TRUE.
 #' @param show_pct Whether to show percentage of samples mutated per gene. Default is TRUE.
 #' @param output Output file name (with png extension). Default is "oncoplot.png".
+#' @param col_data Optional data frame with sample metadata to be shown as bottom annotation. Must contain one column with sample IDs matching the onco matrix column names, and one or more columns with metadata variables. Default is NULL.
+#' @param sample_col Name of the column in col_data that contains the sample IDs. Default is "Tumor_Sample_Barcode".
+#' @param col_data_colors Optional named list with colors for each metadata variable in col_data. If NULL, colors are assigned automatically. Default is NULL.
 #'
 #' @return An oncoplot object which is also saved as a png file.
 #'
@@ -30,15 +33,15 @@
 #'
 #' @export
 
-makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names = TRUE, show_pct = TRUE, output="oncoplot.png") {
+makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Nonstop_color="#000000", FrameDel_color="blue", FrameIns_color="purple", In_Frame_Ins_color="lightblue", In_Frame_Del_color="plum1", Translation_Start_Site_color="#ff0a54", Splice_site_color="darkorange", Multihit_color="#dab49d", show_row_names = TRUE, show_pct = TRUE, col_data = NULL, sample_col = "Tumor_Sample_Barcode", col_data_colors = NULL, output="oncoplot.png") {
 
   # Read the oncoplot matrix
   onco.matrix <- as.matrix(read.table("onco_matrix.txt", header = TRUE, sep = '\t', quote = ""))
-  
+
   # Replace specific strings in matrix
   onco.matrix <- gsub('Frame_Shift', 'Frameshift', onco.matrix)
   colnames(onco.matrix) <- gsub("\\.","-", colnames(onco.matrix))
-  
+
   # Define colors for each type of mutation
   col <- c(Missense_Mutation = Missense_color,
            Nonsense_Mutation = Nonsense_color,
@@ -129,23 +132,38 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
                                  width = 1,
                                  height = 1,
                                  fill = col["5'UTR"]))
-  
+
+  # Build bottom annotation if col_data is provided
+  if (!is.null(col_data)) {
+    col_data_ordered <- col_data[match(colnames(onco.matrix), col_data[[sample_col]]), ]
+    annot_df <- as.data.frame(col_data_ordered[, !names(col_data_ordered) %in% sample_col, drop = FALSE])
+    rownames(annot_df) <- colnames(onco.matrix)
+    bottom_annot <- HeatmapAnnotation(
+      which = "col",
+      df = annot_df,
+      col = col_data_colors,
+      annotation_name_side = "left",
+      annotation_name_rot = 0)
+    } else {
+    bottom_annot <- NULL}
+
   #Execute oncoPrint
-  p <- ComplexHeatmap::oncoPrint(mat = onco.matrix, col = col, 
-                                 alter_fun = alter_fun, alter_fun_is_vectorized = FALSE, 
+  p <- ComplexHeatmap::oncoPrint(mat = onco.matrix, col = col,
+                                 alter_fun = alter_fun, alter_fun_is_vectorized = FALSE,
                                  show_row_names = show_row_names,
                                  pct_side = "right",
                                  row_names_gp = gpar(fontsize = 10,fontface = "italic"),
                                  show_pct = show_pct,
-                                 column_names_side = c("bottom"), 
+                                 column_names_side = c("bottom"),
                                  show_column_names = TRUE,
                                  show_heatmap_legend = TRUE,
                                  column_order = order(apply(onco.matrix,2,function(x){length(which(x != ""))} ), decreasing = TRUE),
-                                 row_names_side = "left")
+                                 row_names_side = "left",
+                                 bottom_annotation = bottom_annot)
   png(output, width = 2000, height = 1200, res = 150)
   draw(p)
   dev.off()
-  
+
   return(p)
 }
 
