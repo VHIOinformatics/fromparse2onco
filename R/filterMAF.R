@@ -24,7 +24,7 @@
 #' filtered_df <- filterMAF(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
 #'
 #' @export
-filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cosmic=FALSE, cgi_list=c("oncogenic (predicted)", "oncogenic (predicted and annotated)", "oncogenic (annotated)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL) {
+filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cosmic=FALSE, cgi_list=c("Oncogenic (predicted by BoostDM)", "Oncogenic (predicted by RulesDM)", "Oncogenic (annotated and predicted by BoostDM)", "Potentially Oncogenic (predicted by RulesDM)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL) {
   # Initialize the filtered table with base conditions
   filter_conditions <- to_filter %>%
     # Filter by the specified columns and minimum conditions for VAF and tumor alternative reads

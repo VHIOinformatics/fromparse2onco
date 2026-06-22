@@ -86,8 +86,8 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
   # Add optional mappings for CGI and OncoKB data if enabled
   if (cgi) {
     rename_map <- c(rename_map,
-                    "CGI-SUMMARY" = "CGI-Oncogenic Summary",
-                    "CGI-PREDICTION" = "CGI-Oncogenic Prediction")
+                    "CGI-SUMMARY" = "CGI-Oncogenicity summary",
+                    "CGI-PREDICTION" = "CGI-Oncogenicity prediction")
   }
   if (oncokb) {
     rename_map <- c(rename_map, "OncoKB" = "OncoKB")
