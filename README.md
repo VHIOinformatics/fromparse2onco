@@ -23,3 +23,9 @@ install_github("VHIOinformatics/fromparse2onco")
 * **fromParse2Onco.R** The function `fromParse2Onco`reads one or more Excel files produced by parseVCF program and makes and oncoplot. It does so by sequentially executing the previous four functions.
 
 For more information on the parameters and usage of the functions, please check the documentation in R.
+
+
+## NEW FEATURES
+* **cosmic** The new parameter cosmic allow you to filter the variants by their presence in cosmic database. Please, use **cosmicpref** to indicate which version of Cosmic you want to use.
+* **topx** The topx parameter let you decide the size of the matrix and, subsequently, the plot. By default, it is set in 50.
+* **absent** This is a completely new parameter. This parameter let you select one sample or a group in the matrix that will be empty of variants. This is made to compare groups or single samples against the rest.
