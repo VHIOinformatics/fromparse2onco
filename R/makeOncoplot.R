@@ -39,7 +39,7 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
   onco.matrix <- as.matrix(read.table("onco_matrix.txt", header = TRUE, sep = '\t', quote = ""))
 
   # Replace specific strings in matrix
-  onco.matrix <- gsub('Frame_Shift', 'Frameshift', onco.matrix)
+  onco.matrix[] <- gsub('Frame_Shift', 'Frameshift', onco.matrix)
   colnames(onco.matrix) <- gsub("\\.","-", colnames(onco.matrix))
 
   # Define colors for each type of mutation
@@ -53,7 +53,7 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
            Translation_Start_Site = Translation_Start_Site_color,
            Splice_Site = Splice_site_color,
            Multi_Hit = Multihit_color,
-	   Intron = "maroon",
+           Intron = "maroon",
            IGR = "aquamarine",
            `3'Flank` = "lightsalmon3",
            `5'Flank` = "yellow2",
@@ -62,76 +62,22 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
            `5'UTR` = "mediumpurple1")
 
   # Assign shapes for each type of mutation
-  alter_fun <- list(
-    background = alter_graphic("rect", fill = "#CCCCCC"),
-    Missense_Mutation = alter_graphic("rect",
-                                      width = 1,
-                                      height = 1,
-                                      fill = col["Missense_Mutation"]),
-    Nonsense_Mutation = alter_graphic("rect",
-                                      width = 1,
-                                      height = 1,
-                                      fill = col["Nonsense_Mutation"]),
-    Nonstop_Mutation = alter_graphic("rect",
-                                     width = 1,
-                                     height = 1,
-                                     fill = col["Nonstop_Mutation"]),
-    Multi_Hit = alter_graphic("rect",
-                              width = 1,
-                              height = 1,
-                              fill = col["Multi_Hit"]),
-    Frameshift_Del = alter_graphic("rect",
-                                   width = 1,
-                                   height = 1,
-                                   fill = col["Frameshift_Del"]),
-    Frameshift_Ins = alter_graphic("rect",
-                                   width = 1,
-                                   height = 1,
-                                   fill = col["Frameshift_Ins"]),
-    Translation_Start_Site = alter_graphic("rect",
-                                           width = 1,
-                                           height = 1,
-                                           fill = col["Translation_Start_Site"]),
-    Splice_Site = alter_graphic("rect",
-                                width = 1,
-                                height = 1,
-                                fill = col["Splice_Site"]),
-    In_Frame_Ins = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["In_Frame_Ins"]),
-    In_Frame_Del = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["In_Frame_Del"]),
-    Intron = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["Intron"]),
-    IGR = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["IGR"]),
-    `3'Flank` = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["3'Flank"]),
-    RNA = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["RNA"]),
-    `5'Flank` = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["5'Flank"]),
-    `3'UTR` = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["3'UTR"]),
-    `5'UTR` = alter_graphic("rect",
-                                 width = 1,
-                                 height = 1,
-                                 fill = col["5'UTR"]))
+  alter_fun <- c(list(background = alter_graphic("rect", fill = "#CCCCCC")),
+                 lapply(col, function(color) {
+                   alter_graphic("rect", width = 1, height = 1, fill = color)
+                 }))
+
+  # Generate col_data_colors automatically if not provided
+  if (!is.null(col_data) && is.null(col_data_colors)) {
+    fixed_colors <- c("#87D2E6", "#CB87E6", "#E69C87")
+    meta_cols <- col_data[, !names(col_data) %in% sample_col, drop = FALSE]
+    col_data_colors <- lapply(meta_cols, function(x) {
+      vals <- sort(unique(na.omit(x)))
+      n <- length(vals)
+      pal <- if (n <= 3) fixed_colors[1:n] else colorRampPalette(RColorBrewer::brewer.pal(8, "Set2"))(n)
+      setNames(pal, vals)
+    })
+  }
 
   # Build bottom annotation if col_data is provided
   if (!is.null(col_data)) {
@@ -142,10 +88,13 @@ makeOncoplot <- function(Missense_color="#2a9134", Nonsense_color="#ffca3a", Non
       which = "col",
       df = annot_df,
       col = col_data_colors,
+      na_col = "#CCCCCC",
       annotation_name_side = "left",
-      annotation_name_rot = 0)
-    } else {
-    bottom_annot <- NULL}
+      annotation_name_rot = 0,
+      annotation_name_gp = gpar(fontsize = 8, fontface = "bold"),
+      simple_anno_size = unit(0.2, "cm"))
+    } else {bottom_annot <- NULL}
+
 
   #Execute oncoPrint
   p <- ComplexHeatmap::oncoPrint(mat = onco.matrix, col = col,

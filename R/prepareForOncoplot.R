@@ -8,18 +8,20 @@
 #' @param minimalMutations Minimum number of samples mutated in a gene to be drawn. Equivalent to minMut in maftools::oncoplot function. Default is 2.
 #' @param topgenes Number of top genes to be drawn. Equivalent to top in maftools::oncoplot function. Default = 20000.
 #' @param nonSyn Vector of Variant Classifications to keep. Equivalent to vc_nonSyn in maftools::read.maf function. Default is c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation").
-#' 
+#' @param save_matrix A logical value indicating whether to save the oncomatrix as a txt file (onco_matrix.txt) in the working directory. If FALSE, returns the matrix as an object. Default is TRUE.
+#' @param save_tmb A logical value indicating whether to save the TMB table as a txt file (TMB_table.txt) in the working directory. Default is TRUE.
+#'
 #' @return It prints summary plots and saves the oncomatrix (onco_matrix.txt) and the TMB table (TMB_table.txt) in the working directory.
-#' 
+#'
 #' @import dplyr
 #' @import maftools
 #' @import stringr
-#' 
+#'
 #' @examples
 #' prepareForOncoplot(filtered_df, minimalMutations=3)
 #'
 #' @export
-prepareForOncoplot <- function(maf_df, remove=TRUE, flags=FALSE, minimalMutations = 2, topgenes = 20000, nonSyn=c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation")) {
+prepareForOncoplot <- function(maf_df, remove=TRUE, flags=FALSE, minimalMutations = 2, topgenes = 20000, nonSyn=c("Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site","Nonsense_Mutation", "Nonstop_Mutation", "In_Frame_Del","In_Frame_Ins", "Missense_Mutation"), save_matrix = TRUE, save_tmb = TRUE) {
   # Read and summarize MAF file
   maf_object <- maftools::read.maf(maf = maf_df, removeDuplicatedVariants = remove, rmFlags=flags,vc_nonSyn = nonSyn)
   maftools::plotmafSummary(maf = maf_object,
@@ -30,19 +32,32 @@ prepareForOncoplot <- function(maf_df, remove=TRUE, flags=FALSE, minimalMutation
   # Should we print the number of unique genes in the input matrix?
   #print(length(unique(maf_df$Hugo_Symbol)))
 
-  # Create an oncoplot
-  maftools::oncoplot(maf = maf_object,
-                     minMut = minimalMutations,
-                     showTumorSampleBarcodes = TRUE,
-                     top = topgenes,
-                     removeNonMutated = TRUE,
-                     writeMatrix = TRUE)
+  # Create oncomatrix, saving strings to file if save_matrix = TRUE
+  if (save_matrix) {
+    maftools::oncoplot(maf = maf_object,
+                       minMut = minimalMutations,
+                       showTumorSampleBarcodes = TRUE,
+                       top = topgenes,
+                       removeNonMutated = TRUE,
+                       writeMatrix = TRUE)
+  }
+  # Capture matrix object to return
+  mat <- maftools::oncoplot(maf = maf_object,
+                            minMut = minimalMutations,
+                            showTumorSampleBarcodes = TRUE,
+                            top = topgenes,
+                            removeNonMutated = TRUE,
+                            writeMatrix = FALSE)
 
   tmb <- maftools::tmb(maf_object)
   tmb_df <- tmb[,c("Tumor_Sample_Barcode", "total_perMB")]
   tmb_df <- tmb_df[order(tmb_df$total_perMB), ]
-  write.table(tmb_df, file = "TMB_table.txt", row.names = FALSE, sep = "\t")
-  #Return maf_object or nothing?
+  if (save_tmb) {
+    write.table(tmb_df, file = "TMB_table.txt", row.names = FALSE, sep = "\t")
+  }
+
+  return(list(oncomatrix = mat$oncomatrix,
+              vc_legend  = mat$vc_legend))
 }
 
 
