@@ -19,7 +19,7 @@
 #' @export
 fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE) {
   # Read the variants data from one or multiple excel files
-  variants_df <- do.call(rbind, lapply(path_to_parse, 
+  variants_df <- do.call(rbind, lapply(path_to_parse,
                                              function(i) {
                                                read_excel(file.path(i))
                                              }))
@@ -84,8 +84,8 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
   # Add optional mappings for CGI and OncoKB data if enabled
   if (cgi) {
     rename_map <- c(rename_map,
-                    "CGI-SUMMARY" = "CGI-Oncogenic Summary",
-                    "CGI-PREDICTION" = "CGI-Oncogenic Prediction")
+                    "CGI-SUMMARY" = "CGI-Oncogenicity summary",
+                    "CGI-PREDICTION" = "CGI-Oncogenicity prediction")
   }
   if (oncokb) {
     rename_map <- c(rename_map, "OncoKB" = "OncoKB")
@@ -112,7 +112,7 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
              dif_len > 0 ~ 'INS',
              dif_len < 0 ~ 'DEL'
            ))
-  
+
   # Replace specific strings in the Annotation (Variant_Classification) column
   variants_df <- variants_df %>%
     mutate(
@@ -170,7 +170,7 @@ _loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
         grepl(classification_patterns[["Gene_Fusion"]], disgreggation) ~ "Gene_Fusion",
         TRUE ~ Variant_Classification
       )
-    ) 
+    )
 
   return(variants_df)
 }
