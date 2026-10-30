@@ -110,4 +110,3 @@ filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_
   # Return the filtered table
   return(filter_conditions)
 }
-

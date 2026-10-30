@@ -186,4 +186,3 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
 
   return(variants_df)
 }
-
