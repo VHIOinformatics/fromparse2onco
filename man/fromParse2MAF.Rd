@@ -4,7 +4,14 @@
 \alias{fromParse2MAF}
 \title{Read parseVCF Output and Convert To MAF}
 \usage{
-fromParse2MAF(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE)
+fromParse2MAF(
+  path_to_parse,
+  tumor_only = FALSE,
+  oncokb = FALSE,
+  cgi = FALSE,
+  cosmic = FALSE,
+  cosmicpref = "COSMIC99"
+)
 }
 \arguments{
 \item{path_to_parse}{A vector of paths to the excel files to be read.}
@@ -14,6 +21,10 @@ fromParse2MAF(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE)
 \item{oncokb}{A logical value indicating whether OncoKB annotation was performed. Default is FALSE.}
 
 \item{cgi}{A logical value indicating whether CGI annotation was performed. Default is FALSE.}
+
+\item{cosmic}{A logical value indicating if the Cosmic columns should be used to filter. Default is FALSE}
+
+\item{cosmicpref}{A string value indicating the version of Cosmic used to annotate the files. Default is COSMIC99}
 }
 \value{
 A data frame containing the processed variant data in MAF format.

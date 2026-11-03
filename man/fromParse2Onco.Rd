@@ -14,8 +14,9 @@ fromParse2Onco(
   alt_tumor_reads = 0,
   cgi = FALSE,
   oncokb = FALSE,
-  cgi_list = c("oncogenic (predicted)", "oncogenic (predicted and annotated)",
-    "oncogenic (annotated)"),
+  cosmic = FALSE,
+  cosmicpref = "COSMIC99",
+  cgi_list = .default_cgi_list,
   oncokb_list = c("Likely Oncogenic", "Oncogenic"),
   annott = c("HIGH", "MODERATE", "MODIFIER"),
   tumor_samples_out = NULL,
@@ -39,7 +40,11 @@ fromParse2Onco(
   Multihit_color = "#dab49d",
   show_row_names = TRUE,
   show_pct = TRUE,
-  output = "oncoplot.png"
+  output = "oncoplot.png",
+  absent = NULL,
+  topx = 50,
+  captureSize = 50,
+  draw_oncoplot = TRUE
 )
 }
 \arguments{
@@ -60,6 +65,10 @@ fromParse2Onco(
 \item{cgi}{A logical value indicating if the CGI Summary column should be used to filter keeping labels included in cgi_list.}
 
 \item{oncokb}{A logical value indicating if the OncoKB column should be used to filter keeping labels included in oncokb_list.}
+
+\item{cosmic}{A logical value indicating if the Cosmic columns should be used to filter (variants with both Cosmic columns empty are removed). Default is FALSE.}
+
+\item{cosmicpref}{A string with the version prefix of the Cosmic columns in the input files. Default is "COSMIC99".}
 
 \item{cgi_list}{Vector of CGI Summary labels to keep.}
 
@@ -106,6 +115,14 @@ fromParse2Onco(
 \item{show_pct}{Whether to show percentage of samples mutated per gene. Default is TRUE.}
 
 \item{output}{Output file name (with png extension). Default is "oncoplot.png".}
+
+\item{absent}{Vector of sample names (as they appear in the plot) that must have NO mutation in the genes shown. Used to compare a sample or a group of samples against the rest. Default is NULL.}
+
+\item{topx}{Number of genes (rows) shown in the final oncoplot. Default is 50.}
+
+\item{captureSize}{Size (in Mb) of the sequenced region used to compute the TMB. Default is 50 (exome); use the size of your panel for targeted panels.}
+
+\item{draw_oncoplot}{Whether the intermediate maftools oncoplot (only needed to write the oncomatrix) is drawn on screen. FALSE saves time with many genes. Default is TRUE.}
 }
 \value{
 An oncoplot object which is also saved as a png file.

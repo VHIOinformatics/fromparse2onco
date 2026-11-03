@@ -1,3 +1,10 @@
+# Default CGI labels kept by the filter. Shared with fromParse2Onco so both
+# functions always use the same list (before, each one had a different one).
+.default_cgi_list <- c("Oncogenic (predicted by BoostDM)",
+                       "Oncogenic (predicted by RulesDM)",
+                       "Oncogenic (annotated and predicted by BoostDM)",
+                       "Potentially Oncogenic (predicted by RulesDM)")
+
 #' Filter MAF Data Frame
 #'
 #' This function filters a data frame of genetic variants based on specified criteria (VAF, reads & flags). It also allows the removal of tumor or control samples.
@@ -23,90 +30,62 @@
 #' @examples
 #' filtered_df <- filterMAF(variants_df, tumor_only=TRUE, VAF_tumor=0.05, alt_tumor_reads=10)
 #'
+#' @import dplyr
+#'
 #' @export
-filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cosmic=FALSE, cgi_list=c("Oncogenic (predicted by BoostDM)", "Oncogenic (predicted by RulesDM)", "Oncogenic (annotated and predicted by BoostDM)", "Potentially Oncogenic (predicted by RulesDM)"), oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL) {
-  # Initialize the filtered table with base conditions
-  filter_conditions <- to_filter %>%
-    # Filter by the specified columns and minimum conditions for VAF and tumor alternative reads
-    filter(FILTER %in% filter_column,
-           VAF >= VAF_tumor,
-           AlternativeReads_TumorSample >= alt_tumor_reads,
-           IMPACT %in% annott)
+filterMAF <- function(to_filter, tumor_only=FALSE, filter_column=c("PASS"), VAF_tumor=0, VAF_control=0, total_tumor_reads=0, alt_tumor_reads=0, cgi=FALSE, oncokb=FALSE, cosmic=FALSE, cgi_list=.default_cgi_list, oncokb_list=c("Likely Oncogenic", "Oncogenic"), annott=c("HIGH","MODERATE","MODIFIER"), tumor_samples_out = NULL, control_samples_out = NULL) {
 
-  # Add additional conditions if considering only tumor
-  if (tumor_only) {
-    filter_conditions <- filter_conditions %>%
-      # Filter by the total number of reads
-      filter(TotalReads >= total_tumor_reads)
-
-    # If cgi is true, filter by the CGI list
-    if (cgi) {
-      filter_conditions <- filter_conditions %>%
-        filter(`CGI-SUMMARY` %in% cgi_list)
-    }
-
-    # If oncokb is true, filter by the OncoKB list
-    if (oncokb) {
-      filter_conditions <- filter_conditions %>%
-        filter(OncoKB %in% oncokb_list)
-    }
-
-    # If tumor_samples_out is not NULL, filter them out
-    if (length(tumor_samples_out) > 0) {
-      filter_conditions <- filter_conditions %>%
-        filter(! Tumor_Sample_Barcode %in% tumor_samples_out)
-    }
-    #NEW FEATURE: Now it is possible to filter by Cosmic presence. 
-    #To use it you have to set Cosmic=TRUE and add the prefix of the version of Cosmic
-    #Cosmic="COSMIC992
-    if (cosmic) {
-      cat("Applying Cosmic filter: removing rows with empty Cosmic columns\n")
-      filter_conditions <- filter_conditions %>%
-        filter(COSMIC_Coding != "" | COSMIC_nonCoding != "")
-    }
-
-  } else {
-    # If not only tumor, add conditions for normal reads and control VAF
-    filter_conditions <- filter_conditions %>%
-      filter(VAF_normal <= VAF_control,
-             TotalReads_Tumor >= total_tumor_reads)
-
-    # If cgi is true, filter by the CGI list
-    if (cgi) {
-      filter_conditions <- filter_conditions %>%
-        filter(`CGI-SUMMARY` %in% cgi_list)
-    }
-
-    # If oncokb is true, filter by the OncoKB list
-    if (oncokb) {
-      filter_conditions <- filter_conditions %>%
-        filter(OncoKB %in% oncokb_list)
-    }
-    #NEW FEATURE: Now it is possible to filter by Cosmic presence. 
-    #To use it you have to set Cosmic=TRUE and add the prefix of the version of Cosmic
-    #Cosmic="COSMIC992
-    if (cosmic) {
-      cat("Applying Cosmic filter: removing rows with empty Cosmic columns\n")
-      filter_conditions <- filter_conditions %>%
-        filter(COSMIC99_Coding != "" | COSMIC99_nonCoding != "")
-    }
-
-    # If tumor_samples_out is not NULL, filter them out
-    if (length(tumor_samples_out) > 0) {
-      filter_conditions <- filter_conditions %>%
-        filter(! Tumor_Sample_Barcode %in% tumor_samples_out)
-    }
-
-    # If control_samples_out is not NULL, filter them out
-    if (length(control_samples_out) > 0) {
-      filter_conditions <- filter_conditions %>%
-        filter(! Control %in% control_samples_out)
-    }
-
+  # filter() silently drops the rows where the condition is NA. Tell the user
+  # how many variants are going to disappear for that reason.
+  numeric_cols <- if (tumor_only) c("VAF", "AlternativeReads_TumorSample", "TotalReads")
+                  else c("VAF", "AlternativeReads_TumorSample", "TotalReads_Tumor", "VAF_normal")
+  for (col in numeric_cols) {
+    n_na <- sum(is.na(to_filter[[col]]))
+    if (n_na > 0) message(n_na, " variants have NA in '", col, "' and will be removed by the filters.")
   }
+
+  # Conditions common to both modes
+  df <- filter(to_filter,
+               FILTER %in% filter_column,
+               VAF >= VAF_tumor,
+               AlternativeReads_TumorSample >= alt_tumor_reads,
+               IMPACT %in% annott)
+
+  # Conditions that depend on the mode
+  if (tumor_only) {
+    df <- filter(df, TotalReads >= total_tumor_reads)
+    if (length(control_samples_out) > 0) {
+      warning("control_samples_out is ignored in tumor_only mode.", call. = FALSE)
+    }
+  } else {
+    df <- filter(df,
+                 VAF_normal <= VAF_control,
+                 TotalReads_Tumor >= total_tumor_reads)
+    if (length(control_samples_out) > 0) {
+      df <- filter(df, !Control %in% control_samples_out)
+    }
+  }
+
+  # Optional filters (identical in both modes, before they were written twice)
+  if (cgi) {
+    df <- filter(df, `CGI-SUMMARY` %in% cgi_list)
+  }
+  if (oncokb) {
+    df <- filter(df, OncoKB %in% oncokb_list)
+  }
+  if (cosmic) {
+    # fromParse2MAF always renames the Cosmic columns to COSMIC_Coding / COSMIC_nonCoding
+    message("Applying Cosmic filter: removing rows with empty Cosmic columns")
+    df <- filter(df,
+                 (!is.na(COSMIC_Coding)    & COSMIC_Coding    != "") |
+                 (!is.na(COSMIC_nonCoding) & COSMIC_nonCoding != ""))
+  }
+  if (length(tumor_samples_out) > 0) {
+    df <- filter(df, !Tumor_Sample_Barcode %in% tumor_samples_out)
+  }
+
   # Remove rows with NA in Variant_Classification
-  filter_conditions <- filter_conditions %>%
-    filter(!is.na(Variant_Classification))  # Remove rows with NA classifications
-  # Return the filtered table
-  return(filter_conditions)
+  df <- filter(df, !is.na(Variant_Classification))
+
+  return(df)
 }

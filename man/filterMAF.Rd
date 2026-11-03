@@ -14,8 +14,8 @@ filterMAF(
   alt_tumor_reads = 0,
   cgi = FALSE,
   oncokb = FALSE,
-  cgi_list = c("oncogenic (predicted)", "oncogenic (predicted and annotated)",
-    "oncogenic (annotated)"),
+  cosmic = FALSE,
+  cgi_list = .default_cgi_list,
   oncokb_list = c("Likely Oncogenic", "Oncogenic"),
   annott = c("HIGH", "MODERATE", "MODIFIER"),
   tumor_samples_out = NULL,
@@ -40,6 +40,8 @@ filterMAF(
 \item{cgi}{A logical value indicating if the CGI Summary column should be used to filter keeping labels included in cgi_list.}
 
 \item{oncokb}{A logical value indicating if the OncoKB column should be used to filter keeping labels included in oncokb_list.}
+
+\item{cosmic}{A logical value indicating if the Cosmic columns should be used to filter. Default is FALSE}
 
 \item{cgi_list}{Vector of CGI Summary labels to keep.}
 

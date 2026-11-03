@@ -13,176 +13,191 @@
 #' @import readxl
 #' @import dplyr
 #' @import stringr
-#' @import purrr
 #'
 #' @examples
 #' variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
-fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE, cosmic=FALSE, cosmicpref="COSMIC99") {
-  # Read the variants data from one or multiple excel files
-  variants_df <- do.call(rbind, lapply(path_to_parse, 
-                                             function(i) {
-                                               read_excel(file.path(i))
-                                             }))
+fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE, cosmic = FALSE, cosmicpref = "COSMIC99") {
 
+  # ---- 1. Check input files ----------------------------------------------
+  missing_files <- path_to_parse[!file.exists(path_to_parse)]
+  if (length(missing_files) > 0) {
+    stop("These files do not exist: ", paste(missing_files, collapse = ", "), call. = FALSE)
+  }
 
-  # Process data based on tumor_only flag
+  # ---- 2. Read all Excel files --------------------------------------------
+  # col_types = "text": every column is read as text, so all files get the same
+  # types (readxl would otherwise guess the type from the first 1000 rows of each
+  # file and the guess can differ between files). The numeric columns are
+  # converted explicitly below.
+  # bind_rows() (unlike rbind) matches columns by name and fills with NA the
+  # columns that are missing in some file.
+  variants_df <- dplyr::bind_rows(
+    lapply(path_to_parse, readxl::read_excel, col_types = "text")
+  )
+
+  # ---- 3. Column maps ------------------------------------------------------
+  # Named vectors where   names = NEW name (MAF)   and   values = OLD name (parseVCF)
+  # Columns shared by both modes:
+  common_map <- c(
+    Chromosome             = "CHROM",
+    Start_Position         = "POS",
+    Reference_Allele       = "REF",
+    Tumor_Seq_Allele2      = "ALT",
+    Hugo_Symbol            = "Gene_Name",
+    Variant_Classification = "Annotation",
+    IMPACT                 = "Annotation_Impact",
+    ExonicFunction_refGene = "Transcript_BioType",
+    BNChange               = "HGVS.c",
+    AAChange_refGene       = "HGVS.p"
+  )
+
   if (tumor_only) {
-    # Columns to convert to numeric for tumor-only mode
     numeric_columns <- c("POS", "ADref", "ADalt", "DPtotal", "VAF")
-
-    # Mapping of column names to new names for tumor-only mode
-    rename_map <- list(
-      "Tumor_Sample_Barcode" = "Sample",
-      "Chromosome" = "CHROM",
-      "Start_Position" = "POS",
-      "Reference_Allele" = "REF",
-      "Tumor_Seq_Allele2" = "ALT",
-      "FILTER" = "FILTER",
-      "Hugo_Symbol" = "Gene_Name",
-      "Variant_Classification" = "Annotation",
-      "IMPACT" = "Annotation_Impact",
-      "ExonicFunction_refGene" = "Transcript_BioType",
-      "BNChange" = "HGVS.c",
-      "AAChange_refGene" = "HGVS.p",
-      "ReferenceReads_TumorSample" = "ADref",
-      "AlternativeReads_TumorSample" = "ADalt",
-      "TotalReads" = "DPtotal",
-      "VAF" = "VAF"
+    mode_map <- c(
+      Tumor_Sample_Barcode         = "Sample",
+      ReferenceReads_TumorSample   = "ADref",
+      AlternativeReads_TumorSample = "ADalt",
+      TotalReads                   = "DPtotal"
     )
+    # Note: FILTER and VAF keep their name in this mode, no renaming is needed.
   } else {
-    # Columns to convert to numeric for paired tumor-normal mode
     numeric_columns <- c(
       "POS", "Tumor_Reference_Reads", "Tumor_Alternative_Reads", "Tumor_Total_Reads", "Tumor_VAF_Alternative",
       "Control_Reference_Reads", "Control_Alternative_Reads", "Control_Total_Reads", "Control_VAF_Alternative"
     )
-
-    # Mapping of column names to new names for paired tumor-normal mode
-    rename_map <- list(
-      "Tumor_Sample_Barcode" = "Tumor",
-      "Chromosome" = "CHROM",
-      "Start_Position" = "POS",
-      "Reference_Allele" = "REF",
-      "Tumor_Seq_Allele2" = "ALT",
-      "FILTER" = "FILTER",
-      "Hugo_Symbol" = "Gene_Name",
-      "Variant_Classification" = "Annotation",
-      "IMPACT" = "Annotation_Impact",
-      "ExonicFunction_refGene" = "Transcript_BioType",
-      "BNChange" = "HGVS.c",
-      "AAChange_refGene" = "HGVS.p",
-      "TotalReads_Normal" = "Control_Total_Reads",
-      "ReferenceReads_NormalSample" = "Control_Reference_Reads",
-      "AlternativeReads_NormalSample" = "Control_Alternative_Reads",
-      "VAF_normal" = "Control_VAF_Alternative",
-      "TotalReads_Tumor" = "Tumor_Total_Reads",
-      "ReferenceReads_TumorSample" = "Tumor_Reference_Reads",
-      "AlternativeReads_TumorSample" = "Tumor_Alternative_Reads",
-      "VAF" = "Tumor_VAF_Alternative"
+    mode_map <- c(
+      Tumor_Sample_Barcode         = "Tumor",
+      TotalReads_Normal            = "Control_Total_Reads",
+      ReferenceReads_NormalSample  = "Control_Reference_Reads",
+      AlternativeReads_NormalSample = "Control_Alternative_Reads",
+      VAF_normal                   = "Control_VAF_Alternative",
+      TotalReads_Tumor             = "Tumor_Total_Reads",
+      ReferenceReads_TumorSample   = "Tumor_Reference_Reads",
+      AlternativeReads_TumorSample = "Tumor_Alternative_Reads",
+      VAF                          = "Tumor_VAF_Alternative"
     )
   }
+  rename_map <- c(common_map, mode_map)
 
-  # Add optional mappings for CGI and OncoKB data if enabled
+  # Optional annotation columns
   if (cgi) {
     rename_map <- c(rename_map,
-                    "CGI-SUMMARY" = "CGI-Oncogenicity summary",
+                    "CGI-SUMMARY"    = "CGI-Oncogenicity summary",
                     "CGI-PREDICTION" = "CGI-Oncogenicity prediction")
   }
   if (oncokb) {
     rename_map <- c(rename_map, "OncoKB" = "OncoKB")
   }
-  #NEW FEATURE: Now it is possible to filter by Cosmic presence. 
-  #To use it you have to set Cosmic=TRUE and add the prefix of the version of Cosmic
-  #Cosmic="COSMIC992
-  
+  # Filter by Cosmic presence: set cosmic = TRUE and give the Cosmic version prefix
+  # in cosmicpref (e.g. "COSMIC99"). Whatever the version, the columns are always
+  # renamed to COSMIC_Coding / COSMIC_nonCoding so the filter does not depend on it.
   if (cosmic) {
-    codingcol <- paste0(cosmicpref, "_Coding")
-    noncodingcol <- paste0(cosmicpref, "_nonCoding") 
     rename_map <- c(rename_map,
-                    "COSMIC_Coding" = codingcol,
-                    "COSMIC_nonCoding" = noncodingcol)
+                    COSMIC_Coding    = paste0(cosmicpref, "_Coding"),
+                    COSMIC_nonCoding = paste0(cosmicpref, "_nonCoding"))
   }
-  # Apply transformations:
-  # 1. Convert specified columns to numeric (if they exist).
-  # 2. Rename columns based on the rename_map.
-  variants_df <- variants_df %>%
-    mutate(across(all_of(numeric_columns), as.numeric)) %>%  # Convert numeric columns
-    rename(!!!rename_map)  # Rename columns using rename_map
 
+  # ---- 4. Check that every needed column exists (clear error message) -----
+  needed  <- unique(c(unname(rename_map), numeric_columns))
+  absent  <- setdiff(needed, names(variants_df))
+  if (length(absent) > 0) {
+    stop("These columns were not found in the input file(s): ",
+         paste(absent, collapse = ", "),
+         ". Check tumor_only / cgi / oncokb / cosmic / cosmicpref.", call. = FALSE)
+  }
 
-  # Calculate End_Position and modify Variant_Type column
+  # ---- 5. Numeric conversion and renaming ---------------------------------
   variants_df <- variants_df %>%
-    mutate(dif_len = str_length(Tumor_Seq_Allele2) - str_length(Reference_Allele),
-           #According to MAF format specifications (https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/) the end position is the highest numeric genomic position of the reported variant
-           #The End_Position field is not actually used to make the oncoplot but it is required by the read.maf function when validating the required fields from MAF
-           End_Position = Start_Position + str_length(Tumor_Seq_Allele2) - 1,
-           Variant_Type = case_when(
-             dif_len == 0 & str_length(Tumor_Seq_Allele2) == 1 ~ 'SNP',
-             dif_len == 0 & str_length(Tumor_Seq_Allele2) == 2 ~ 'DNP',
-             dif_len == 0 & str_length(Tumor_Seq_Allele2) == 3 ~ 'TNP',
-             dif_len == 0 & str_length(Tumor_Seq_Allele2) > 3 ~ 'ONP',
-             dif_len > 0 ~ 'INS',
-             dif_len < 0 ~ 'DEL'
-           ))
-  
-  # Replace specific strings in the Annotation (Variant_Classification) column
+    mutate(across(all_of(numeric_columns), as.numeric)) %>%
+    rename(all_of(rename_map))
+
+  # ---- 6. End_Position and Variant_Type -----------------------------------
   variants_df <- variants_df %>%
     mutate(
+      ref_len = str_length(Reference_Allele),
+      alt_len = str_length(Tumor_Seq_Allele2),
+      dif_len = alt_len - ref_len,
+      # MAF specification (https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/):
+      # End_Position is the highest genomic position of the variant. For a deletion
+      # that is given by the REF length (before it used the ALT length, which is
+      # wrong for deletions); for SNP/MNP/INS it is the same as before.
+      # It is not used to draw the oncoplot, but read.maf requires it.
+      End_Position = Start_Position + pmax(ref_len, alt_len) - 1,
+      Variant_Type = case_when(
+        dif_len == 0 & alt_len == 1 ~ "SNP",
+        dif_len == 0 & alt_len == 2 ~ "DNP",
+        dif_len == 0 & alt_len == 3 ~ "TNP",
+        dif_len == 0 & alt_len > 3  ~ "ONP",
+        dif_len > 0                 ~ "INS",
+        dif_len < 0                 ~ "DEL"
+      ),
+      # Join the two UTR-truncation terms (they come joined by '&') before keeping
+      # only the first consequence
       Variant_Classification = str_replace(Variant_Classification,
                                            "prime_UTR_truncation&exon_loss_variant",
                                            "prime_UTR_truncation+exon_loss_variant"),
-      # Create a new column 'disgreggation' by removing '&' and subsequent characters
-      disgreggation = str_remove(Variant_Classification, "&.*")
+      # First consequence only (SnpEff lists them from most to least severe)
+      consequence = str_remove(Variant_Classification, "&.*")
     )
 
-  # Define a named list of patterns and their corresponding classifications
-  classification_patterns <- list(
-    "Splice_Site" = "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
-    "Nonsense_Mutation" = "stop_gained",
-    "Frame_Shift_Del" = "frameshift_variant",
-    "Frame_Shift_Ins" = "frameshift_variant",
-    "Nonstop_Mutation" = "stop_lost",
-    "Translation_Start_Site" = "initiator_codon_variant|start_lost",
-    "In_Frame_Ins" = "inframe_insertion",
-    "In_Frame_Del" = "inframe_deletion",
-    "Missense_Mutation" = "missense_variant|coding_sequence_variant|rare_amino_acid_variant",
-    "Intron" = "transcript_amplification|intron_variant|intragenic_variant",
-    "Silent" = "synonymous_variant|stop_retained_variant|NMD_transcript_variant|start_retained",
-    "RNA" = "mature_miRNA_variant|exon_variant|non_coding_exon_variant|non_coding_transcript|nc_transcript_variant",
-    "5'UTR" = "5_prime_UTR_variant|5_prime_UTR_premature_start_codon_gain_variant",
-    "3'UTR" = "3_prime_UTR_variant",
-    "IGR" = "TF_binding_site_variant|regulatory_region|intergenic",
-    "5'Flank" = "upstream_gene_variant",
-    "3'Flank" = "downstream_gene_variant",
-    "Gene_Fusion" = "gene_fusion"
-  )
+  # ---- 7. Variant_Classification (MAF vocabulary) --------------------------
+  variants_df <- .classify_variants(variants_df)
 
-  # Apply patterns to classify Variant_Classification
-  variants_df <- variants_df %>%
-    mutate(
-      Variant_Classification = case_when(
-        grepl(classification_patterns[["Splice_Site"]], disgreggation) ~ "Splice_Site",
-        grepl(classification_patterns[["Nonsense_Mutation"]], disgreggation) ~ "Nonsense_Mutation",
-        grepl(classification_patterns[["Frame_Shift_Del"]], disgreggation) & Variant_Type == "DEL" ~ "Frame_Shift_Del",
-        grepl(classification_patterns[["Frame_Shift_Ins"]], disgreggation) & Variant_Type == "INS" ~ "Frame_Shift_Ins",
-        grepl(classification_patterns[["Nonstop_Mutation"]], disgreggation) ~ "Nonstop_Mutation",
-        grepl(classification_patterns[["Translation_Start_Site"]], disgreggation) ~ "Translation_Start_Site",
-        grepl(classification_patterns[["In_Frame_Ins"]], disgreggation) & Variant_Type == "INS" ~ "In_Frame_Ins",
-        grepl(classification_patterns[["In_Frame_Del"]], disgreggation) & Variant_Type == "DEL" ~ "In_Frame_Del",
-        grepl(classification_patterns[["Missense_Mutation"]], disgreggation) ~ "Missense_Mutation",
-        grepl(classification_patterns[["Intron"]], disgreggation) ~ "Intron",
-        grepl(classification_patterns[["Silent"]], disgreggation) ~ "Silent",
-        grepl(classification_patterns[["RNA"]], disgreggation) ~ "RNA",
-        grepl(classification_patterns[["5'UTR"]], disgreggation) ~ "5'UTR",
-        grepl(classification_patterns[["3'UTR"]], disgreggation) ~ "3'UTR",
-        grepl(classification_patterns[["IGR"]], disgreggation) ~ "IGR",
-        grepl(classification_patterns[["5'Flank"]], disgreggation) ~ "5'Flank",
-        grepl(classification_patterns[["3'Flank"]], disgreggation) ~ "3'Flank",
-        grepl(classification_patterns[["Gene_Fusion"]], disgreggation) ~ "Gene_Fusion",
-        TRUE ~ Variant_Classification
-      )
-    ) 
+  # Remove helper columns
+  variants_df <- variants_df[, setdiff(names(variants_df), c("ref_len", "alt_len", "dif_len", "consequence"))]
 
   return(variants_df)
+}
+
+
+# Rules to translate SnpEff consequences into MAF Variant_Classification.
+# ORDER MATTERS: the first rule that matches wins.
+#   class   : MAF Variant_Classification assigned
+#   pattern : regular expression searched in the (first) SnpEff consequence
+#   vtype   : Variant_Type the variant must have (NA = any)
+.classification_rules <- data.frame(
+  class = c("Splice_Site", "Nonsense_Mutation", "Frame_Shift_Del", "Frame_Shift_Ins",
+            "Nonstop_Mutation", "Translation_Start_Site", "In_Frame_Ins", "In_Frame_Del",
+            "Missense_Mutation", "Intron", "Silent", "RNA", "5'UTR", "3'UTR", "IGR",
+            "5'Flank", "3'Flank", "Gene_Fusion"),
+  pattern = c(
+    "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
+    "stop_gained",
+    "frameshift_variant",
+    "frameshift_variant",
+    "stop_lost",
+    "initiator_codon_variant|start_lost",
+    "inframe_insertion",
+    "inframe_deletion",
+    "missense_variant|coding_sequence_variant|rare_amino_acid_variant",
+    "transcript_amplification|intron_variant|intragenic_variant",
+    "synonymous_variant|stop_retained_variant|NMD_transcript_variant|start_retained",
+    "mature_miRNA_variant|exon_variant|non_coding_exon_variant|non_coding_transcript|nc_transcript_variant",
+    "5_prime_UTR_variant|5_prime_UTR_premature_start_codon_gain_variant",
+    "3_prime_UTR_variant",
+    "TF_binding_site_variant|regulatory_region|intergenic",
+    "upstream_gene_variant",
+    "downstream_gene_variant",
+    "gene_fusion"),
+  vtype = c(NA, NA, "DEL", "INS", NA, NA, "INS", "DEL",
+            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
+  stringsAsFactors = FALSE
+)
+
+# Applies .classification_rules. Needs the columns `consequence` and `Variant_Type`.
+# Variants that match no rule keep their original Variant_Classification.
+#' @noRd
+.classify_variants <- function(df) {
+  assigned <- rep(NA_character_, nrow(df))
+  for (i in seq_len(nrow(.classification_rules))) {
+    rule <- .classification_rules[i, ]
+    hit  <- is.na(assigned) &
+      grepl(rule$pattern, df$consequence) &
+      (is.na(rule$vtype) | df$Variant_Type %in% rule$vtype)
+    assigned[hit] <- rule$class
+  }
+  df$Variant_Classification <- dplyr::coalesce(assigned, df$Variant_Classification)
+  df
 }

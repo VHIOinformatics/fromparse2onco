@@ -17,7 +17,13 @@ makeOncoplot(
   Multihit_color = "#dab49d",
   show_row_names = TRUE,
   show_pct = TRUE,
-  output = "oncoplot.png"
+  output = "oncoplot.png",
+  topx = 50,
+  absent = NULL,
+  matrix_file = "onco_matrix.txt",
+  width = 2000,
+  height = 1200,
+  res = 150
 )
 }
 \arguments{
@@ -46,6 +52,14 @@ makeOncoplot(
 \item{show_pct}{Whether to show percentage of samples mutated per gene. Default is TRUE.}
 
 \item{output}{Output file name (with png extension). Default is "oncoplot.png".}
+
+\item{topx}{Number of rows of the desired matrix. Default is 50. Strongly recommended.}
+
+\item{absent}{This parameter filters genes that are mutation-free in the specified samples but may be mutated in others. Use the sample names as they appear in the plot (after removing repeated names).}
+
+\item{matrix_file}{Path to the oncomatrix written by prepareForOncoplot. Default is "onco_matrix.txt" (in the working directory).}
+
+\item{width, height, res}{Size (pixels) and resolution of the png file. Default is 2000 x 1200 at 150 dpi.}
 }
 \value{
 An oncoplot object which is also saved as a png file.
