@@ -7,9 +7,13 @@
 #' @param oncokb A logical value indicating whether OncoKB annotation was performed. Default is FALSE.
 #' @param cgi A logical value indicating whether CGI annotation was performed. Default is FALSE.
 #' @param cosmic A logical value indicating if the Cosmic columns should be used to filter. Default is FALSE
-#' @param cosmicpref A string value indicating the version of Cosmic used to annotate the files. Default is COSMIC99
+#' @param cosmicpref A string value indicating the version of Cosmic used to annotate the files. Default is COSMIC99.
+#' @param maf_cvhio Logical. If TRUE, creates an alternative cVHIO MAF Excel file. Default is FALSE.
+#' @param entrez_json Path to the Hugo_Symbol to Entrez_Gene_Id JSON file. By default, looks next to the input Excel file.
+#' @param ncbi_build Genome build written in the NCBI_Build column. Default is GRCh38.
+#' @param maf_cvhio_file Output path for the alternative cVHIO MAF Excel file. By default, saves it next to the input Excel file.
 #'
-#' @return A data frame containing the processed variant data in MAF format.
+#' @return A data frame containing the processed variant data in MAF format. If maf_cvhio = TRUE, an additional Excel file is created.
 #' @import readxl
 #' @import dplyr
 #' @import stringr
@@ -19,7 +23,7 @@
 #' variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
 #' @export
-fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FALSE, cosmic=FALSE, cosmicpref="COSMIC99") {
+fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE, cosmic = FALSE, cosmicpref = "COSMIC99", maf_cvhio = FALSE, entrez_json = NULL, ncbi_build = "GRCh38", maf_cvhio_file = NULL) {
   # Read the variants data from one or multiple excel files
   variants_df <- do.call(rbind, lapply(path_to_parse, 
                                              function(i) {
@@ -126,6 +130,10 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
              dif_len < 0 ~ 'DEL'
            ))
   
+  # Keep the original SnpEff annotation before converting it for the standard MAF.
+  # The alternative cVHIO MAF uses only the first consequence (before '&').
+  first_consequence <- sub("&.*", "", as.character(variants_df$Variant_Classification))
+
   # Replace specific strings in the Annotation (Variant_Classification) column
   variants_df <- variants_df %>%
     mutate(
@@ -138,7 +146,7 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
 
   # Define a named list of patterns and their corresponding classifications
   classification_patterns <- list(
-    "Splice_Site" = "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
+    "Splice_Site" = "splice_acceptor_variant|splice_donor_variant|splice_region_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
     "Nonsense_Mutation" = "stop_gained",
     "Frame_Shift_Del" = "frameshift_variant",
     "Frame_Shift_Ins" = "frameshift_variant",
@@ -183,6 +191,233 @@ fromParse2MAF <- function(path_to_parse,tumor_only = FALSE, oncokb=FALSE, cgi=FA
         TRUE ~ Variant_Classification
       )
     ) 
+
+  # Create the alternative cVHIO MAF only when requested.
+  # This does not change the standard MAF returned by this function.
+  if (maf_cvhio) {
+
+    # convert the first SnpEff consequence to the terms used in Python.
+    snpeff_to_mut_type <- function(annotation) {
+      if (is.na(annotation) || annotation == "") return(annotation)
+
+      if (grepl("^splice_", annotation)) return("splicing")
+      if (grepl("frameshift", annotation)) return("frameshift mutation")
+      if (grepl("inframe_deletion", annotation)) return("nonframeshift deletion")
+      if (grepl("inframe_insertion", annotation)) return("nonframeshift insertion")
+      if (annotation == "stop_gained") return("stopgain")
+      if (annotation == "stop_lost") return("stoploss")
+      if (grepl("^(start_lost|initiator_codon_variant)$", annotation)) return("startloss")
+      if (grepl("^(synonymous_variant|stop_retained_variant|start_retained_variant)$", annotation)) return("synonymous SNV")
+      if (grepl("^(missense_variant|coding_sequence_variant|rare_amino_acid_variant)$", annotation)) return("nonsynonymous SNV")
+      if (annotation == "upstream_gene_variant") return("upstream")
+      if (annotation == "downstream_gene_variant") return("downstream")
+
+      # Keep annotations without a matching rule unchanged.
+      return(annotation)
+    }
+
+    # Small helper: apply the Python get_variant_classification() equivalences.
+    get_variant_classification <- function(mut_type) {
+      if (is.na(mut_type)) return(NA_character_)
+
+      if (mut_type %in% c(
+        "frameshift deletion", "frameshift deletion?", "frameshift insertion",
+        "frameshift block substitution", "frameshift delins", "frameshift substitution",
+        "frameshift insertion / stoploss", "frameshift bloc substitution",
+        "frameshift delation", "frameshift mutation", "frameshift mutaiion"
+      )) {
+        return("inframe")
+      }
+
+      if (mut_type %in% c(
+        "nonsynonymous SNV", "nonsynonymous substitution",
+        "nonsynonymous insertion", "nonsynonymous mutation",
+        "synonymous SNV"
+      )) {
+        return("missense")
+      }
+
+      if (mut_type %in% c(
+        "stopgain", "stoploss", "upstream", "nonframeshift deletion",
+        "nonframeshift substitution", "nonframeshift insertion",
+        "nonframeshift block substitution", "nonframeshift delins",
+        "nonframeshift mutation"
+      )) {
+        return("truncating")
+      }
+
+      if (mut_type %in% c("splicing", "splice", "promoter")) {
+        return("splice")
+      }
+
+      if (mut_type == "protein") return("protein")
+      if (mut_type %in% c("non", "")) return("")
+
+      # Keep any annotation not covered by the equivalences unchanged.
+      return(mut_type)
+    }
+
+    # apply the provided Python HGVSp_Short corrections.
+    invalid_HGVSp_Short_treatment <- function(hgvsp_short, mut_type, transcript) {
+      hgvsp_short <- as.character(hgvsp_short)
+      mut_type <- as.character(mut_type)
+      transcript <- as.character(transcript)
+
+      hgvsp_short[is.na(hgvsp_short)] <- ""
+
+      for (i in seq_along(hgvsp_short)) {
+
+        if (hgvsp_short[i] == "" && !is.na(mut_type[i]) && mut_type[i] == "splice") {
+          if (!is.na(transcript[i])) {
+            match_position <- regmatches(transcript[i], regexec("c\\.(\\d+)", transcript[i]))[[1]]
+          } else {
+            match_position <- character(0)
+          }
+
+          if (length(match_position) == 2) {
+            hgvsp_short[i] <- paste0("p.X", round(as.numeric(match_position[2]) / 3), "_splice")
+          } else {
+            hgvsp_short[i] <- NA_character_
+          }
+
+        } else if (hgvsp_short[i] == "p.?" &&
+                   !is.na(transcript[i]) &&
+                   grepl("c.", transcript[i], fixed = TRUE)) {
+
+          c_name <- regmatches(transcript[i], regexpr("c\\.[^:]*", transcript[i]))
+
+          if (startsWith(c_name, "c.1-")) {
+            hgvsp_short[i] <- "p.M1"
+          } else {
+            hgvsp_short[i] <- NA_character_
+          }
+        }
+      }
+
+      return(hgvsp_short)
+    }
+
+    # create cbp_driver_annotation from CGI and OncoKB.
+    get_cbp_driver_annotation <- function(cgi_value, oncokb_value) {
+      cgi_value <- tolower(trimws(as.character(cgi_value)))
+      oncokb_value <- tolower(trimws(as.character(oncokb_value)))
+
+      cgi_value[cgi_value == ""] <- NA_character_
+      oncokb_value[oncokb_value == ""] <- NA_character_
+
+      # These CGI and OncoKB labels are considered pathogenic.
+      cgi_pathogenic <- c("pathogenic", "likely pathogenic", "pathogenic / likely pathogenic", "oncogenic", "likely oncogenic")
+      oncokb_pathogenic <- c("pathogenic", "likely pathogenic", "pathogenic / likely pathogenic", "oncogenic", "likely oncogenic")
+
+      is_pathogenic <- (!is.na(cgi_value) & cgi_value %in% cgi_pathogenic) |
+                       (!is.na(oncokb_value) & oncokb_value %in% oncokb_pathogenic)
+
+      has_annotation <- !is.na(cgi_value) | !is.na(oncokb_value)
+
+      ifelse(
+        is_pathogenic,
+        "pathogenic / likely pathogenic",
+        ifelse(has_annotation, "vus", NA_character_)
+      )
+    }
+
+    # apply the provided Python cbp_driver function.
+    get_cbp_driver <- function(cbp_driver_annotation) {
+      ifelse(
+        cbp_driver_annotation %in% c("pathogenic / likely pathogenic", "vus"),
+        "Putative_Driver",
+        "Unknown"
+      )
+    }
+
+    # Read the Hugo_Symbol to Entrez_Gene_Id mapping from the JSON file.
+    if (is.null(entrez_json)) {
+      entrez_json <- file.path(dirname(path_to_parse[1]), "clau_hugo_entrez.json")
+    }
+
+    if (!file.exists(entrez_json)) {
+      stop(
+        "The Entrez JSON file was not found. Please provide its path using 'entrez_json'.",
+        call. = FALSE
+      )
+    }
+
+    entrez <- unlist(jsonlite::fromJSON(entrez_json), use.names = TRUE)
+    entrez_id <- unname(entrez[as.character(variants_df$Hugo_Symbol)])
+
+    # Get the first SnpEff consequence and apply the Python equivalences.
+    mut_type <- vapply(first_consequence, snpeff_to_mut_type, character(1))
+    variant_classification <- vapply(mut_type, get_variant_classification, character(1))
+
+    # Get CGI and OncoKB annotations. Missing annotation columns are treated as NA.
+    cgi_values <- if ("CGI-Oncogenicity summary" %in% names(variants_df)) {
+      variants_df[["CGI-Oncogenicity summary"]]
+    } else {
+      rep(NA_character_, nrow(variants_df))
+    }
+
+    oncokb_values <- if ("OncoKB" %in% names(variants_df)) {
+      variants_df[["OncoKB"]]
+    } else {
+      rep(NA_character_, nrow(variants_df))
+    }
+
+    cbp_driver_annotation <- get_cbp_driver_annotation(cgi_values, oncokb_values)
+    cbp_driver <- get_cbp_driver(cbp_driver_annotation)
+
+    # Get HGVSp_Short and correct the invalid values using HGVS.c.
+    hgvsp_short <- invalid_HGVSp_Short_treatment(
+      variants_df$AAChange_refGene,
+      variant_classification,
+      variants_df$BNChange
+    )
+
+    # Read reference and alternative read counts from the correct columns.
+    if (tumor_only) {
+      t_ref_count <- variants_df$ReferenceReads_TumorSample
+      t_alt_count <- variants_df$AlternativeReads_TumorSample
+    } else {
+      t_ref_count <- variants_df$Tumor_Reference_Reads
+      t_alt_count <- variants_df$Tumor_Alternative_Reads
+    }
+
+    # Build the alternative cVHIO MAF with the requested columns.
+    maf_cvhio_df <- data.frame(
+      Hugo_Symbol = variants_df$Hugo_Symbol,
+      Entrez_Gene_Id = as.numeric(entrez_id),
+      NCBI_Build = ncbi_build,
+      Chromosome = variants_df$Chromosome,
+      Start_Position = variants_df$Start_Position,
+      End_Position = variants_df$End_Position,
+      Variant_Classification = variant_classification,
+      Reference_Allele = variants_df$Reference_Allele,
+      Tumor_Seq_Allele2 = variants_df$Tumor_Seq_Allele2,
+      Tumor_Sample_Barcode = variants_df$Tumor_Sample_Barcode,
+      HGVSp_Short = hgvsp_short,
+      t_ref_count = t_ref_count,
+      t_alt_count = t_alt_count,
+      cbp_driver = cbp_driver,
+      cbp_driver_annotation = cbp_driver_annotation,
+      variant_annotation = variants_df$Variant_Classification,
+      stringsAsFactors = FALSE
+    )
+
+    # Set the default Excel output path next to the first input file.
+    if (is.null(maf_cvhio_file)) {
+      maf_cvhio_file <- file.path(dirname(path_to_parse[1]), "MAF_cVHIO.xlsx")
+    }
+
+    # Export the alternative MAF to Excel.
+    if (!requireNamespace("openxlsx", quietly = TRUE)) {
+      stop("Please install the 'openxlsx' package to export the cVHIO MAF to Excel.", call. = FALSE)
+    }
+
+    openxlsx::write.xlsx(maf_cvhio_df, file = maf_cvhio_file, overwrite = TRUE, rowNames = FALSE)
+
+    # Print a small preview in the console.
+    message("Alternative cVHIO MAF saved to: ", maf_cvhio_file)
+    print(utils::head(maf_cvhio_df, 5))
+  }
 
   return(variants_df)
 }
