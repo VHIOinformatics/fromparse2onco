@@ -8,6 +8,17 @@
 #' @param cgi A logical value indicating whether CGI annotation was performed. Default is FALSE.
 #' @param cosmic A logical value indicating if the Cosmic columns should be used to filter. Default is FALSE
 #' @param cosmicpref A string value indicating the version of Cosmic used to annotate the files. Default is COSMIC99
+#' @param maf_cvhio A logical value. If TRUE, an additional MAF file for the cVHIO portal (cBioPortal) is written to an Excel file (see Details). It is NOT used for the oncoplot: the returned data frame is the same as with FALSE. Default is FALSE.
+#' @param cvhio_file Path of the Excel file written when maf_cvhio = TRUE. Default is "maf_cvhio.xlsx" (working directory).
+#' @param ncbi_build Genome version written in the NCBI_Build column. Default is "GRCh38".
+#' @param cvhio_mut_type_col Name of the column OF THE ORIGINAL EXCEL used to compute Variant_Classification. Default is "Annotation" (SnpEff consequences; only the first one, before the first "&", is used).
+#' @param entrez_json Path to a JSON file {Hugo_Symbol: Entrez_Gene_Id}. Default is the file shipped with the package.
+#' @param cvhio_preview Number of rows of the MAF cVHIO printed on screen. 0 disables the preview. Default is 5.
+#'
+#' @details
+#' With maf_cvhio = TRUE a second table is built from the same variants (all of them: it is created in this function, before filterMAF) with these columns:
+#' Hugo_Symbol, Entrez_Gene_Id, NCBI_Build, Chromosome, Start_Position, End_Position, Variant_Classification, Reference_Allele, Tumor_Seq_Allele2, Tumor_Sample_Barcode, HGVSp_Short, t_ref_count, t_alt_count, cbp_driver, cbp_driver_annotation.
+#' Entrez_Gene_Id comes from the JSON and the Hugo_Symbol. Variant_Classification: first consequence of cvhio_mut_type_col, translated to the closest mut_type (e.g. missense_variant -> "nonsynonymous SNV") and then to inframe / missense / truncating / splice with the equivalence table ("synonymous SNV" counts as missense). HGVSp_Short is HGVS.p, corrected for "invalid" values (empty in splice variants, "p.?"). cbp_driver_annotation comes from the CGI ("CGI-Oncogenicity summary") and OncoKB ("OncoKB") columns of the Excel: "pathogenic / likely pathogenic" if CGI is oncogenic or OncoKB is Oncogenic / Likely Oncogenic; "vus" if there is some CGI/OncoKB annotation but none is oncogenic (there is no "benign"); NA if there is no annotation. cbp_driver is "Putative_Driver" for "pathogenic / likely pathogenic" and "vus", and "Unknown" otherwise.
 #'
 #' @return A data frame containing the processed variant data in MAF format.
 #' @import readxl
@@ -17,8 +28,15 @@
 #' @examples
 #' variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
 #'
+#' # Also write the MAF for the cVHIO portal
+#' variants_df <- fromParse2MAF("/path/to/file1", tumor_only=TRUE, maf_cvhio=TRUE, ncbi_build="GRCh38")
+#'
 #' @export
-fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE, cosmic = FALSE, cosmicpref = "COSMIC99") {
+fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi = FALSE, cosmic = FALSE, cosmicpref = "COSMIC99",
+                          maf_cvhio = FALSE, cvhio_file = "maf_cvhio.xlsx", ncbi_build = "GRCh38",
+                          cvhio_mut_type_col = "Annotation",
+                          entrez_json = system.file("extdata", "hugo_entrez.json", package = "fromparse2onco"),
+                          cvhio_preview = 5) {
 
   # ---- 1. Check input files ----------------------------------------------
   missing_files <- path_to_parse[!file.exists(path_to_parse)]
@@ -36,6 +54,18 @@ fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi
   variants_df <- dplyr::bind_rows(
     lapply(path_to_parse, readxl::read_excel, col_types = "text")
   )
+
+  # ---- 2b. maf_cvhio: copia del Excel original y comprobaciones tempranas ------
+  # Se guarda el Excel tal cual (antes de renombrar) para poder leer de el las columnas
+  # cvhio_mut_type_col, CGI y OncoKB con el nombre que tienen en el Excel.
+  if (maf_cvhio) {
+    raw_df <- variants_df
+    if (!cvhio_mut_type_col %in% names(raw_df)) {
+      stop("maf_cvhio: la columna '", cvhio_mut_type_col, "' no esta en el Excel. Columnas disponibles: ",
+           paste(names(raw_df), collapse = ", "), call. = FALSE)
+    }
+    entrez <- .read_hugo_entrez(entrez_json)       # falla pronto si el JSON no existe
+  }
 
   # ---- 3. Column maps ------------------------------------------------------
   # Named vectors where   names = NEW name (MAF)   and   values = OLD name (parseVCF)
@@ -148,6 +178,15 @@ fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi
   # Remove helper columns
   variants_df <- variants_df[, setdiff(names(variants_df), c("ref_len", "alt_len", "dif_len", "consequence"))]
 
+  # ---- 8. MAF alternativo para el portal cVHIO (no se usa para el oncoplot) ------
+  if (maf_cvhio) {
+    maf_cvhio_df <- .make_maf_cvhio(maf = variants_df, raw = raw_df, entrez = entrez, ncbi_build = ncbi_build,
+                                    mut_type_col = cvhio_mut_type_col)
+    writexl::write_xlsx(maf_cvhio_df, path = cvhio_file)
+    message("maf_cvhio: ", nrow(maf_cvhio_df), " variantes escritas en '", cvhio_file, "' (NCBI_Build = ", ncbi_build, ").")
+    if (cvhio_preview > 0) print(utils::head(maf_cvhio_df, cvhio_preview), row.names = FALSE)
+  }
+
   return(variants_df)
 }
 
@@ -163,7 +202,7 @@ fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi
             "Missense_Mutation", "Intron", "Silent", "RNA", "5'UTR", "3'UTR", "IGR",
             "5'Flank", "3'Flank", "Gene_Fusion"),
   pattern = c(
-    "splice_acceptor_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
+    "splice_acceptor_variant|splice_region_variant|splice_donor_variant|transcript_ablation|exon_loss_variant|5_prime_UTR_truncation\\+exon_loss_variant|3_prime_UTR_truncation\\+exon_loss_variant",
     "stop_gained",
     "frameshift_variant",
     "frameshift_variant",
@@ -201,3 +240,4 @@ fromParse2MAF <- function(path_to_parse, tumor_only = FALSE, oncokb = FALSE, cgi
   df$Variant_Classification <- dplyr::coalesce(assigned, df$Variant_Classification)
   df
 }
+

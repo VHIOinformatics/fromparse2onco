@@ -13,11 +13,12 @@ Imports:
     dplyr,
     grDevices,
     grid,
+    jsonlite,
     maftools,
     readxl,
     stringr,
-    utils
-Suggests:
-    testthat (>= 3.0.0),
+    utils,
     writexl
+Suggests:
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3

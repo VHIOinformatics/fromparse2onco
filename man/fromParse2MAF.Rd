@@ -10,7 +10,13 @@ fromParse2MAF(
   oncokb = FALSE,
   cgi = FALSE,
   cosmic = FALSE,
-  cosmicpref = "COSMIC99"
+  cosmicpref = "COSMIC99",
+  maf_cvhio = FALSE,
+  cvhio_file = "maf_cvhio.xlsx",
+  ncbi_build = "GRCh38",
+  cvhio_mut_type_col = "Annotation",
+  entrez_json = system.file("extdata", "hugo_entrez.json", package = "fromparse2onco"),
+  cvhio_preview = 5
 )
 }
 \arguments{
@@ -25,6 +31,18 @@ fromParse2MAF(
 \item{cosmic}{A logical value indicating if the Cosmic columns should be used to filter. Default is FALSE}
 
 \item{cosmicpref}{A string value indicating the version of Cosmic used to annotate the files. Default is COSMIC99}
+
+\item{maf_cvhio}{A logical value. If TRUE, an additional MAF file for the cVHIO portal (cBioPortal) is written to an Excel file (see Details). It is NOT used for the oncoplot: the returned data frame is the same as with FALSE. Default is FALSE.}
+
+\item{cvhio_file}{Path of the Excel file written when maf_cvhio = TRUE. Default is "maf_cvhio.xlsx" (working directory).}
+
+\item{ncbi_build}{Genome version written in the NCBI_Build column. Default is "GRCh38".}
+
+\item{cvhio_mut_type_col}{Name of the column OF THE ORIGINAL EXCEL used to compute Variant_Classification. Default is "Annotation" (SnpEff consequences; only the first one, before the first "&", is used).}
+
+\item{entrez_json}{Path to a JSON file {Hugo_Symbol: Entrez_Gene_Id}. Default is the file shipped with the package.}
+
+\item{cvhio_preview}{Number of rows of the MAF cVHIO printed on screen. 0 disables the preview. Default is 5.}
 }
 \value{
 A data frame containing the processed variant data in MAF format.
@@ -32,7 +50,15 @@ A data frame containing the processed variant data in MAF format.
 \description{
 This function reads variant data from one or more Excel files produced by parseVCF program and processes it in order to match MAF format specifications.
 }
+\details{
+With maf_cvhio = TRUE a second table is built from the same variants (all of them: it is created in this function, before filterMAF) with these columns:
+Hugo_Symbol, Entrez_Gene_Id, NCBI_Build, Chromosome, Start_Position, End_Position, Variant_Classification, Reference_Allele, Tumor_Seq_Allele2, Tumor_Sample_Barcode, HGVSp_Short, t_ref_count, t_alt_count, cbp_driver, cbp_driver_annotation.
+Entrez_Gene_Id comes from the JSON and the Hugo_Symbol. Variant_Classification: first consequence of cvhio_mut_type_col, translated to the closest mut_type (e.g. missense_variant -> "nonsynonymous SNV") and then to inframe / missense / truncating / splice with the equivalence table ("synonymous SNV" counts as missense). HGVSp_Short is HGVS.p, corrected for "invalid" values (empty in splice variants, "p.?"). cbp_driver_annotation comes from the CGI ("CGI-Oncogenicity summary") and OncoKB ("OncoKB") columns of the Excel: "pathogenic / likely pathogenic" if CGI is oncogenic or OncoKB is Oncogenic / Likely Oncogenic; "vus" if there is some CGI/OncoKB annotation but none is oncogenic (there is no "benign"); NA if there is no annotation. cbp_driver is "Putative_Driver" for "pathogenic / likely pathogenic" and "vus", and "Unknown" otherwise.
+}
 \examples{
 variants_df <- fromParse2MAF(c("/path/to/file1","/path/to/file2"), tumor_only=TRUE)
+
+# Also write the MAF for the cVHIO portal
+variants_df <- fromParse2MAF("/path/to/file1", tumor_only=TRUE, maf_cvhio=TRUE, ncbi_build="GRCh38")
 
 }
